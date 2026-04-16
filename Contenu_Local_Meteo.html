@@ -17,6 +17,10 @@
   .zone-btn { background: #0a1525; color: #5a8aaa; border: 1px solid #1a3550; padding: 6px 14px; border-radius: 3px; cursor: pointer; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.9px; transition: all 0.12s; white-space: nowrap; }
   .zone-btn:hover:not(.active) { background: #162840; color: #a0c8e0; border-color: #2a5070; }
   .zone-btn.active { background: #145a90; border-color: #145a90; color: #fff; }
+  .zone-separator { display: inline-block; width: 1px; height: 22px; background: #1a3550; margin: 0 8px; vertical-align: middle; }
+  .zone-btn-all { background: #0d2240; color: #1a9eff; border-color: #1a9eff; }
+  .zone-btn-all:hover:not(.active) { background: #162840; color: #4ab5ff; border-color: #4ab5ff; }
+  .zone-btn-all.active { background: #1a9eff; border-color: #1a9eff; color: #fff; }
 
   .creneau-nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .creneau-btn { background: #162840; color: #90b8d4; border: 1px solid #1e3a58; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 0.78rem; letter-spacing: 0.2px; transition: all 0.12s; }
@@ -44,7 +48,9 @@
 
   .error-box { background: #3a1520; border: 1px solid #b33050; border-radius: 4px; padding: 10px 14px; color: #e94560; font-size: 0.82rem; margin-bottom: 14px; white-space: pre-wrap; }
 
-  .bulletin-card { background: #0e1c2d; border: 1px solid #1a3550; border-radius: 6px; padding: 20px 24px; margin-bottom: 20px; }
+  .bulletins-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+  .bulletin-card { background: #0e1c2d; border: 1px solid #1a3550; border-radius: 6px; padding: 20px 24px; }
+  .bulletin-card.loading-card .bulletin-text { color: #4a6e8e; font-style: italic; }
   .bulletin-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid #1a3550; gap: 10px; flex-wrap: wrap; }
   .bulletin-title { font-size: 0.8rem; color: #90b8d4; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
   .btn-copy { background: #1a4060; color: #fff; border: none; padding: 7px 14px; border-radius: 3px; cursor: pointer; font-size: 0.76rem; font-weight: 700; transition: background 0.12s; }
@@ -78,12 +84,14 @@
 <header>
   <div class="header-top">
     <div class="zone-nav" id="zoneNav">
+      <button class="zone-btn" data-zone="reseau">Réseau</button>
       <button class="zone-btn" data-zone="mel">Métropole Lilloise</button>
       <button class="zone-btn" data-zone="nord">Nord</button>
       <button class="zone-btn" data-zone="pdc">Pas-de-Calais</button>
       <button class="zone-btn" data-zone="picardie">Picardie</button>
       <button class="zone-btn" data-zone="marne">Marne</button>
-      <button class="zone-btn" data-zone="reseau">Réseau</button>
+      <span class="zone-separator" aria-hidden="true"></span>
+      <button class="zone-btn zone-btn-all" data-zone="all">Toutes les zones</button>
     </div>
   </div>
   <div class="header-bot">
@@ -113,13 +121,11 @@
 
   <div id="errorBox"></div>
 
-  <div class="bulletin-card">
-    <div class="bulletin-header">
-      <span class="bulletin-title" id="bulletinTitle">Bulletin météo</span>
-      <button id="copyBtn" class="btn-copy" disabled>Copier</button>
-    </div>
-    <div class="bulletin-text" id="bulletinText">
-      <span class="bulletin-placeholder">Sélectionne une zone puis clique sur "Générer le bulletin". Mode actif aujourd'hui : <strong>Journée</strong> (matin + après-midi).</span>
+  <div id="bulletinsList" class="bulletins-list">
+    <div class="bulletin-card">
+      <div class="bulletin-text">
+        <span class="bulletin-placeholder">Sélectionne une zone puis clique sur "Générer le bulletin". Mode actif aujourd'hui : <strong>Journée</strong> (matin + après-midi).</span>
+      </div>
     </div>
   </div>
 
@@ -515,7 +521,6 @@ function initApp() {
   });
 
   document.getElementById('generateBtn').addEventListener('click', generateBulletin);
-  document.getElementById('copyBtn').addEventListener('click', copyBulletin);
 
   document.getElementById('dataToggle').addEventListener('click', () => {
     document.getElementById('dataToggle').classList.toggle('open');
@@ -528,13 +533,6 @@ function initApp() {
 function updateUI() {
   const btn = document.getElementById('generateBtn');
   btn.disabled = !state.zone || !state.date;
-
-  const title = document.getElementById('bulletinTitle');
-  if (state.zone && state.date) {
-    title.textContent = `Bulletin météo — ${ZONES[state.zone].label} — Journée du ${formatDateFR(state.date)}`;
-  } else {
-    title.textContent = 'Bulletin météo';
-  }
 }
 
 function formatDateFR(dateStr) {
@@ -700,56 +698,138 @@ Rédige maintenant le bulletin pour la journée du ${dateLabel} sur la zone "${z
 /* =========================================================
    GENERATE
    ========================================================= */
+/**
+ * Génère un bulletin pour une seule zone.
+ * Retourne { zoneKey, zoneLabel, text, perCity } ou jette une erreur.
+ */
+async function generateOne(zoneKey, dateStr) {
+  const perCity = await fetchWeather(zoneKey, dateStr);
+  const prompt = buildPrompt(zoneKey, perCity, dateStr);
+  const res = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt })
+  });
+  const json = await res.json();
+  if (json.error) {
+    throw new Error(json.error + (json.details ? '\n' + JSON.stringify(json.details, null, 2) : ''));
+  }
+  return {
+    zoneKey,
+    zoneLabel: ZONES[zoneKey].label,
+    text: (json.text || '').trim() || '(Réponse vide)',
+    perCity
+  };
+}
+
+/* Ordre d'affichage quand mode "Toutes les zones" */
+const ALL_ZONES_ORDER = ['reseau', 'mel', 'nord', 'pdc', 'picardie', 'marne'];
+
 async function generateBulletin() {
   if (!state.zone || !state.date) return;
 
   const btn = document.getElementById('generateBtn');
   const status = document.getElementById('statusMsg');
-  const bulletinText = document.getElementById('bulletinText');
+  const list = document.getElementById('bulletinsList');
   const errorBox = document.getElementById('errorBox');
-  const copyBtn = document.getElementById('copyBtn');
 
   btn.disabled = true;
-  copyBtn.disabled = true;
   errorBox.innerHTML = '';
-  status.textContent = `Récupération des données météo (${ZONES[state.zone].cities.length} villes)…`;
+
+  const isAll = state.zone === 'all';
+  const zoneKeys = isAll ? ALL_ZONES_ORDER : [state.zone];
+  const totalCities = zoneKeys.reduce((s, z) => s + ZONES[z].cities.length, 0);
+
+  status.textContent = isAll
+    ? `Génération en parallèle des ${zoneKeys.length} zones (${totalCities} villes)…`
+    : `Récupération des données météo (${totalCities} villes)…`;
   status.classList.add('loading');
-  bulletinText.innerHTML = '<span class="bulletin-placeholder">Bulletin en cours de rédaction…</span>';
-  bulletinText.classList.add('loading');
+
+  // Affiche des placeholders pendant la génération
+  list.innerHTML = zoneKeys.map(zk => `
+    <div class="bulletin-card loading-card" data-zone="${zk}">
+      <div class="bulletin-header">
+        <span class="bulletin-title">${escapeHtml(ZONES[zk].label)} — Journée du ${formatDateFR(state.date)}</span>
+      </div>
+      <div class="bulletin-text loading">Bulletin en cours de rédaction…</div>
+    </div>
+  `).join('');
 
   try {
-    const perCity = await fetchWeather(state.zone, state.date);
-    status.textContent = 'Rédaction du bulletin par l\'IA…';
+    const results = await Promise.allSettled(zoneKeys.map(zk => generateOne(zk, state.date)));
 
-    const prompt = buildPrompt(state.zone, perCity, state.date);
+    const rendered = results.map((r, i) => ({
+      zoneKey: zoneKeys[i],
+      zoneLabel: ZONES[zoneKeys[i]].label,
+      status: r.status,
+      value: r.status === 'fulfilled' ? r.value : null,
+      error: r.status === 'rejected' ? r.reason?.message || String(r.reason) : null
+    }));
 
-    const res = await fetch(PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
-    });
+    renderBulletins(rendered);
 
-    const json = await res.json();
-
-    if (json.error) {
-      throw new Error(json.error + (json.details ? '\n' + JSON.stringify(json.details, null, 2) : ''));
+    // Tableau de données : uniquement en mode zone unique
+    if (!isAll && rendered[0].value) {
+      renderDataTable(rendered[0].value.perCity);
+    } else if (isAll) {
+      document.getElementById('dataContent').innerHTML = '<em style="color:#4a6e8e;">Données détaillées disponibles uniquement en mode zone unique.</em>';
     }
 
-    bulletinText.textContent = (json.text || '').trim() || '(Réponse vide)';
-    copyBtn.disabled = false;
-
-    renderDataTable(perCity);
-    status.textContent = '✓ Bulletin généré';
-    setTimeout(() => { status.textContent = ''; }, 4000);
+    const failed = rendered.filter(r => r.status === 'rejected');
+    if (failed.length === 0) {
+      status.textContent = isAll ? `✓ ${rendered.length} bulletins générés` : '✓ Bulletin généré';
+    } else {
+      status.textContent = `⚠️ ${failed.length}/${rendered.length} bulletin(s) en erreur`;
+    }
+    setTimeout(() => { status.textContent = ''; }, 5000);
   } catch (err) {
     errorBox.innerHTML = `<div class="error-box">Erreur : ${escapeHtml(err.message)}</div>`;
-    bulletinText.innerHTML = '<span class="bulletin-placeholder">Échec. Voir l\'erreur ci-dessus.</span>';
+    list.innerHTML = '<div class="bulletin-card"><div class="bulletin-text"><span class="bulletin-placeholder">Échec global. Voir l\'erreur ci-dessus.</span></div></div>';
     status.textContent = '';
   } finally {
     btn.disabled = false;
     status.classList.remove('loading');
-    bulletinText.classList.remove('loading');
   }
+}
+
+function renderBulletins(rendered) {
+  const list = document.getElementById('bulletinsList');
+  list.innerHTML = rendered.map((r, i) => {
+    if (r.status === 'fulfilled') {
+      return `
+        <div class="bulletin-card" data-zone="${r.zoneKey}" data-idx="${i}">
+          <div class="bulletin-header">
+            <span class="bulletin-title">${escapeHtml(r.zoneLabel)} — Journée du ${formatDateFR(state.date)}</span>
+            <button class="btn-copy" onclick="copyBulletinAt(${i})">Copier</button>
+          </div>
+          <div class="bulletin-text">${escapeHtml(r.value.text)}</div>
+        </div>
+      `;
+    } else {
+      return `
+        <div class="bulletin-card" data-zone="${r.zoneKey}" data-idx="${i}">
+          <div class="bulletin-header">
+            <span class="bulletin-title">${escapeHtml(r.zoneLabel)} — Journée du ${formatDateFR(state.date)}</span>
+          </div>
+          <div class="bulletin-text"><span style="color:#e94560;">Erreur : ${escapeHtml(r.error)}</span></div>
+        </div>
+      `;
+    }
+  }).join('');
+}
+
+function copyBulletinAt(idx) {
+  const card = document.querySelector(`.bulletin-card[data-idx="${idx}"]`);
+  if (!card) return;
+  const text = card.querySelector('.bulletin-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = card.querySelector('.btn-copy');
+    if (!btn) return;
+    const original = btn.textContent;
+    btn.classList.add('copied');
+    btn.textContent = 'Copié ✓';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = original; }, 1600);
+  });
 }
 
 function escapeHtml(s) {
@@ -790,23 +870,6 @@ function renderDataTable(perCity) {
     </table>
   `;
   document.getElementById('dataContent').innerHTML = html;
-}
-
-/* =========================================================
-   COPY
-   ========================================================= */
-function copyBulletin() {
-  const text = document.getElementById('bulletinText').textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('copyBtn');
-    const originalText = btn.textContent;
-    btn.classList.add('copied');
-    btn.textContent = 'Copié ✓';
-    setTimeout(() => {
-      btn.classList.remove('copied');
-      btn.textContent = originalText;
-    }, 1600);
-  });
 }
 
 initApp();
