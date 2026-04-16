@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contenu local — Météo — Andrea Media</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Arial', sans-serif; background: #16253a; color: #d0e4f0; min-height: 100vh; }
+
+  header { background: #0e1c2d; padding: 10px 24px; border-bottom: 2px solid #145a90; }
+  .header-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .header-bot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  header h1 { font-size: 0.85rem; color: #ffffff; font-weight: 400; letter-spacing: 0.4px; margin-top: 6px; }
+
+  .zone-nav { display: flex; gap: 4px; flex-wrap: wrap; }
+  .zone-btn { background: #0a1525; color: #5a8aaa; border: 1px solid #1a3550; padding: 6px 14px; border-radius: 3px; cursor: pointer; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.9px; transition: all 0.12s; white-space: nowrap; }
+  .zone-btn:hover:not(.active) { background: #162840; color: #a0c8e0; border-color: #2a5070; }
+  .zone-btn.active { background: #145a90; border-color: #145a90; color: #fff; }
+
+  .creneau-nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .creneau-btn { background: #162840; color: #90b8d4; border: 1px solid #1e3a58; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 0.78rem; letter-spacing: 0.2px; transition: all 0.12s; }
+  .creneau-btn:hover:not(:disabled):not(.active) { background: #1e3a58; color: #fff; border-color: #2a5070; }
+  .creneau-btn.active { background: #b33050; border-color: #b33050; color: #fff; }
+  .creneau-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .custom-wrap { display: flex; gap: 8px; align-items: center; padding: 5px 10px; border: 1px solid #1e3a58; border-radius: 4px; background: #0f1f32; }
+  .custom-label { font-size: 0.68rem; color: #4a6e8e; text-transform: uppercase; letter-spacing: 0.9px; }
+  .custom-date { background: #162840; border: 1px solid #1e3a58; color: #d0e4f0; font-size: 0.82rem; padding: 4px 8px; border-radius: 3px; font-family: Arial; outline: none; color-scheme: dark; }
+  .custom-date:focus { border-color: #145a90; }
+  .moment-radio { display: flex; gap: 2px; }
+  .moment-btn { background: #162840; color: #7aa0b8; border: 1px solid #1e3a58; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; transition: all 0.12s; }
+  .moment-btn:hover:not(:disabled):not(.active) { background: #1e3a58; color: #fff; }
+  .moment-btn.active { background: #145a90; border-color: #145a90; color: #fff; }
+  .moment-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  main { padding: 18px 24px; max-width: 1100px; margin: 0 auto; }
+
+  .action-bar { display: flex; gap: 14px; margin-bottom: 18px; align-items: center; flex-wrap: wrap; }
+  .btn-generate { background: #b33050; color: #fff; border: none; padding: 10px 22px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; transition: background 0.12s; }
+  .btn-generate:hover:not(:disabled) { background: #972844; }
+  .btn-generate:disabled { opacity: 0.45; cursor: not-allowed; }
+  .status-msg { font-size: 0.78rem; color: #7aa0b8; }
+
+  .error-box { background: #3a1520; border: 1px solid #b33050; border-radius: 4px; padding: 10px 14px; color: #e94560; font-size: 0.82rem; margin-bottom: 14px; white-space: pre-wrap; }
+
+  .bulletin-card { background: #0e1c2d; border: 1px solid #1a3550; border-radius: 6px; padding: 20px 24px; margin-bottom: 20px; }
+  .bulletin-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid #1a3550; gap: 10px; flex-wrap: wrap; }
+  .bulletin-title { font-size: 0.8rem; color: #90b8d4; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
+  .btn-copy { background: #1a4060; color: #fff; border: none; padding: 7px 14px; border-radius: 3px; cursor: pointer; font-size: 0.76rem; font-weight: 700; transition: background 0.12s; }
+  .btn-copy:hover:not(:disabled) { background: #1e5070; }
+  .btn-copy:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-copy.copied { background: #185e2c; }
+  .bulletin-text { font-size: 1.02rem; line-height: 1.7; color: #d0e4f0; min-height: 80px; white-space: pre-wrap; }
+  .bulletin-placeholder { color: #4a6e8e; font-style: italic; font-size: 0.92rem; }
+
+  .data-card { background: #0e1c2d; border: 1px solid #1a3550; border-radius: 6px; padding: 14px 20px; margin-bottom: 20px; }
+  .data-title { font-size: 0.7rem; color: #4a6e8e; text-transform: uppercase; letter-spacing: 0.9px; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; }
+  .data-title::before { content: "▸"; transition: transform 0.12s; }
+  .data-title.open::before { transform: rotate(90deg); }
+  .data-content { display: none; margin-top: 14px; }
+  .data-content.open { display: block; }
+  .data-summary { margin-bottom: 10px; font-size: 0.8rem; color: #90b8d4; }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
+  .data-table th { background: #0a1525; color: #3a6080; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.8px; padding: 6px 8px; text-align: left; border-bottom: 1px solid #1a3550; }
+  .data-table td { padding: 5px 8px; border-bottom: 1px solid #16253a; color: #d0e4f0; }
+  .data-table tr:hover td { background: #162e48; }
+  .data-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .footer-note { font-size: 0.7rem; color: #4a6e8e; text-align: center; padding: 12px 0 24px; letter-spacing: 0.3px; }
+
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+  .loading { animation: pulse 1.2s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="zone-nav" id="zoneNav">
+      <button class="zone-btn" data-zone="mel">Métropole Lilloise</button>
+      <button class="zone-btn" data-zone="nord">Nord</button>
+      <button class="zone-btn" data-zone="pdc">Pas-de-Calais</button>
+      <button class="zone-btn" data-zone="picardie">Picardie</button>
+      <button class="zone-btn" data-zone="marne">Marne</button>
+      <button class="zone-btn" data-zone="reseau">Réseau</button>
+    </div>
+  </div>
+  <div class="header-bot">
+    <div class="creneau-nav">
+      <button class="creneau-btn" disabled title="Prochainement">Cet après-midi</button>
+      <button class="creneau-btn" disabled title="Prochainement">Demain matin</button>
+      <button class="creneau-btn" disabled title="Prochainement">Demain après-midi</button>
+      <div class="custom-wrap">
+        <span class="custom-label">ou date :</span>
+        <input type="date" id="customDate" class="custom-date" />
+        <div class="moment-radio">
+          <button class="moment-btn" data-moment="matin" disabled title="Prochainement">Matin</button>
+          <button class="moment-btn" data-moment="aprem" disabled title="Prochainement">Après-midi</button>
+          <button class="moment-btn active" data-moment="journee">Journée</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <h1 id="headerTitle">Contenu local — Météo</h1>
+</header>
+
+<main>
+  <div class="action-bar">
+    <button id="generateBtn" class="btn-generate" disabled>Générer le bulletin</button>
+    <span id="statusMsg" class="status-msg"></span>
+  </div>
+
+  <div id="errorBox"></div>
+
+  <div class="bulletin-card">
+    <div class="bulletin-header">
+      <span class="bulletin-title" id="bulletinTitle">Bulletin météo</span>
+      <button id="copyBtn" class="btn-copy" disabled>Copier</button>
+    </div>
+    <div class="bulletin-text" id="bulletinText">
+      <span class="bulletin-placeholder">Sélectionne une zone puis clique sur "Générer le bulletin". Mode actif aujourd'hui : <strong>Journée</strong> (matin + après-midi).</span>
+    </div>
+  </div>
+
+  <div class="data-card">
+    <div class="data-title" id="dataToggle">Données météo détaillées (source Open-Meteo)</div>
+    <div class="data-content" id="dataContent"><em style="color:#4a6e8e;">Générez un bulletin pour afficher les données.</em></div>
+  </div>
+
+  <div class="footer-note">Andrea Media — Module « Contenu local » · Sous-module Météo · Démo</div>
+</main>
+
+<script>
+/* =========================================================
+   CONFIG
+   ========================================================= */
+const PROXY_URL = 'https://andrea-meteo-proxy.johann-antigny.workers.dev/';
+
+/* Liste des villes (nom, latitude, longitude) par zone. */
+const ZONES = {
+  mel: {
+    label: "Métropole Lilloise",
+    cities: [
+      ["Lille", 50.6292, 3.0573],
+      ["Roubaix", 50.6901, 3.1817],
+      ["Tourcoing", 50.7236, 3.1613],
+      ["Villeneuve-d'Ascq", 50.6197, 3.1484],
+      ["Wattrelos", 50.7033, 3.2192],
+      ["Marcq-en-Barœul", 50.6700, 3.0950],
+      ["Lambersart", 50.6489, 3.0253],
+      ["La Madeleine", 50.6559, 3.0742],
+      ["Mons-en-Barœul", 50.6344, 3.1097],
+      ["Armentières", 50.6886, 2.8811],
+      ["Wasquehal", 50.6700, 3.1311],
+      ["Croix", 50.6789, 3.1500],
+      ["Haubourdin", 50.6089, 2.9867],
+      ["Loos", 50.6139, 3.0100],
+      ["Seclin", 50.5497, 3.0300],
+      ["Faches-Thumesnil", 50.5967, 3.0717],
+      ["Ronchin", 50.6003, 3.0911],
+      ["Hem", 50.6636, 3.1833],
+      ["Halluin", 50.7800, 3.1300],
+      ["Mouvaux", 50.7061, 3.1489],
+      ["Saint-André-lez-Lille", 50.6581, 3.0431],
+      ["Lesquin", 50.5869, 3.1144],
+      ["Bondues", 50.7283, 3.0889],
+      ["Wattignies", 50.5883, 3.0433],
+      ["Comines", 50.7619, 3.0300],
+      ["Neuville-en-Ferrain", 50.7519, 3.1622],
+      ["Linselles", 50.7422, 3.0925],
+      ["Quesnoy-sur-Deûle", 50.7067, 2.9983],
+      ["Wambrechies", 50.6897, 3.0317],
+      ["Leers", 50.6825, 3.2381]
+    ]
+  },
+  nord: {
+    label: "Nord",
+    cities: [
+      ["Dunkerque", 51.0383, 2.3775],
+      ["Valenciennes", 50.3569, 3.5233],
+      ["Douai", 50.3711, 3.0797],
+      ["Maubeuge", 50.2811, 3.9728],
+      ["Denain", 50.3278, 3.3933],
+      ["Hazebrouck", 50.7256, 2.5386],
+      ["Orchies", 50.4703, 3.2386],
+      ["Fourmies", 50.0133, 4.0436],
+      ["Bergues", 50.9708, 2.4339],
+      ["Bailleul", 50.7361, 2.7325],
+      ["Avesnes-sur-Helpe", 50.1244, 3.9331],
+      ["Gravelines", 50.9864, 2.1272],
+      ["Condé-sur-l'Escaut", 50.4478, 3.5881],
+      ["Le Quesnoy", 50.2475, 3.6394],
+      ["Saint-Amand-les-Eaux", 50.4411, 3.4278],
+      ["Jeumont", 50.2972, 4.1006],
+      ["Anzin", 50.3736, 3.5003],
+      ["Bavay", 50.2989, 3.7953],
+      ["Grande-Synthe", 51.0147, 2.2953],
+      ["Coudekerque-Branche", 51.0333, 2.3858],
+      ["Wormhout", 50.8794, 2.4747],
+      ["Cassel", 50.8003, 2.4861],
+      ["Steenvoorde", 50.8044, 2.5839],
+      ["Merville", 50.6433, 2.6425],
+      ["Aulnoye-Aymeries", 50.1989, 3.8433],
+      ["Hautmont", 50.2497, 3.9306],
+      ["Somain", 50.3356, 3.2739],
+      ["Sin-le-Noble", 50.3706, 3.1017],
+      ["Raismes", 50.3933, 3.4892],
+      ["Vieux-Condé", 50.4667, 3.5853]
+    ]
+  },
+  pdc: {
+    label: "Pas-de-Calais",
+    cities: [
+      ["Calais", 50.9481, 1.8587],
+      ["Boulogne-sur-Mer", 50.7264, 1.6147],
+      ["Arras", 50.2944, 2.7811],
+      ["Lens", 50.4331, 2.8319],
+      ["Béthune", 50.5306, 2.6417],
+      ["Saint-Omer", 50.7494, 2.2522],
+      ["Liévin", 50.4203, 2.7761],
+      ["Bruay-la-Buissière", 50.4831, 2.5456],
+      ["Hénin-Beaumont", 50.4203, 2.9536],
+      ["Berck", 50.4075, 1.5836],
+      ["Montreuil-sur-Mer", 50.4628, 1.7625],
+      ["Hesdin", 50.3606, 2.0378],
+      ["Aire-sur-la-Lys", 50.6397, 2.3997],
+      ["Le Touquet-Paris-Plage", 50.5244, 1.5872],
+      ["Étaples", 50.5169, 1.6342],
+      ["Bapaume", 50.1014, 2.8508],
+      ["Saint-Pol-sur-Ternoise", 50.3808, 2.3419],
+      ["Carvin", 50.4894, 2.9594],
+      ["Auchel", 50.5083, 2.4744],
+      ["Avion", 50.4128, 2.8361],
+      ["Wimereux", 50.7686, 1.6086],
+      ["Marquise", 50.8183, 1.7081],
+      ["Noeux-les-Mines", 50.4803, 2.6636],
+      ["Harnes", 50.4497, 2.9081],
+      ["Lillers", 50.5628, 2.4839],
+      ["Courrières", 50.4594, 2.9406],
+      ["Outreau", 50.7017, 1.5844],
+      ["Oignies", 50.4683, 3.0039],
+      ["Ardres", 50.8564, 1.9808],
+      ["Desvres", 50.6650, 1.8336]
+    ]
+  },
+  picardie: {
+    label: "Picardie",
+    cities: [
+      ["Amiens", 49.8942, 2.2953],
+      ["Saint-Quentin", 49.8486, 3.2864],
+      ["Beauvais", 49.4294, 2.0806],
+      ["Compiègne", 49.4175, 2.8242],
+      ["Laon", 49.5636, 3.6236],
+      ["Soissons", 49.3814, 3.3236],
+      ["Creil", 49.2586, 2.4806],
+      ["Abbeville", 50.1056, 1.8361],
+      ["Doullens", 50.1572, 2.3408],
+      ["Albert", 50.0031, 2.6506],
+      ["Péronne", 49.9292, 2.9342],
+      ["Chantilly", 49.1939, 2.4556],
+      ["Senlis", 49.2069, 2.5867],
+      ["Clermont", 49.3806, 2.4097],
+      ["Méru", 49.2361, 2.1372],
+      ["Noyon", 49.5814, 3.0005],
+      ["Chauny", 49.6172, 3.2192],
+      ["Hirson", 49.9194, 4.0800],
+      ["Villers-Cotterêts", 49.2553, 3.0931],
+      ["Crépy-en-Valois", 49.2353, 2.8881],
+      ["Nogent-sur-Oise", 49.2728, 2.4633],
+      ["Montdidier", 49.6472, 2.5692],
+      ["Tergnier", 49.6542, 3.2975],
+      ["Guise", 49.8994, 3.6269],
+      ["La Fère", 49.6606, 3.3647],
+      ["Vervins", 49.8361, 3.9103],
+      ["Bohain-en-Vermandois", 49.9842, 3.4539],
+      ["Ham", 49.7447, 3.0728],
+      ["Roye", 49.7003, 2.7872],
+      ["Corbie", 49.9089, 2.5061],
+      ["Friville-Escarbotin", 50.0894, 1.5483],
+      ["Saint-Valery-sur-Somme", 50.1847, 1.6286],
+      ["Pont-Sainte-Maxence", 49.3014, 2.6022],
+      ["Gouvieux", 49.1986, 2.4114],
+      ["Liancourt", 49.3183, 2.4731]
+    ]
+  },
+  marne: {
+    label: "Marne",
+    cities: [
+      ["Reims", 49.2583, 4.0317],
+      ["Châlons-en-Champagne", 48.9569, 4.3653],
+      ["Épernay", 49.0419, 3.9600],
+      ["Vitry-le-François", 48.7244, 4.5800],
+      ["Fismes", 49.3097, 3.6825],
+      ["Prunay", 49.2242, 4.1519],
+      ["Sézanne", 48.7194, 3.7228],
+      ["Sainte-Menehould", 49.0894, 4.8981],
+      ["Aÿ", 49.0547, 4.0006],
+      ["Tinqueux", 49.2531, 3.9956],
+      ["Cormontreuil", 49.2253, 4.0497],
+      ["Cernay-lès-Reims", 49.2703, 4.0906],
+      ["Witry-lès-Reims", 49.2950, 4.1253],
+      ["Bétheny", 49.2869, 4.0553],
+      ["Bazancourt", 49.3503, 4.1947],
+      ["Dormans", 49.0756, 3.6458],
+      ["Mourmelon-le-Grand", 49.1444, 4.3667],
+      ["Suippes", 49.1350, 4.5289],
+      ["Avize", 48.9719, 4.0156],
+      ["Mareuil-sur-Aÿ", 49.0531, 4.0339],
+      ["Saint-Brice-Courcelles", 49.2608, 4.0028],
+      ["Muizon", 49.2647, 3.9092],
+      ["Verzy", 49.1539, 4.1547],
+      ["Taissy", 49.2089, 4.0822],
+      ["Rilly-la-Montagne", 49.1681, 4.0497],
+      ["Pontfaverger-Moronvilliers", 49.2922, 4.2814],
+      ["Warmeriville", 49.3236, 4.2328],
+      ["Magenta", 49.0428, 3.9525],
+      ["Pierry", 49.0281, 3.9436],
+      ["Chouilly", 49.0494, 4.0297]
+    ]
+  },
+  reseau: {
+    label: "Réseau",
+    cities: [
+      // Métropole Lilloise (5)
+      ["Lille", 50.6292, 3.0573],
+      ["Roubaix", 50.6901, 3.1817],
+      ["Tourcoing", 50.7236, 3.1613],
+      ["Villeneuve-d'Ascq", 50.6197, 3.1484],
+      ["Armentières", 50.6886, 2.8811],
+      // Nord hors MEL hors Cambrésis (8)
+      ["Dunkerque", 51.0383, 2.3775],
+      ["Valenciennes", 50.3569, 3.5233],
+      ["Douai", 50.3711, 3.0797],
+      ["Maubeuge", 50.2811, 3.9728],
+      ["Hazebrouck", 50.7256, 2.5386],
+      ["Fourmies", 50.0133, 4.0436],
+      ["Avesnes-sur-Helpe", 50.1244, 3.9331],
+      ["Gravelines", 50.9864, 2.1272],
+      // Pas-de-Calais (8)
+      ["Calais", 50.9481, 1.8587],
+      ["Boulogne-sur-Mer", 50.7264, 1.6147],
+      ["Arras", 50.2944, 2.7811],
+      ["Lens", 50.4331, 2.8319],
+      ["Béthune", 50.5306, 2.6417],
+      ["Saint-Omer", 50.7494, 2.2522],
+      ["Berck", 50.4075, 1.5836],
+      ["Le Touquet-Paris-Plage", 50.5244, 1.5872],
+      // Picardie sans zone Château-Thierry (10)
+      ["Amiens", 49.8942, 2.2953],
+      ["Saint-Quentin", 49.8486, 3.2864],
+      ["Beauvais", 49.4294, 2.0806],
+      ["Compiègne", 49.4175, 2.8242],
+      ["Laon", 49.5636, 3.6236],
+      ["Soissons", 49.3814, 3.3236],
+      ["Creil", 49.2586, 2.4806],
+      ["Abbeville", 50.1056, 1.8361],
+      ["Péronne", 49.9292, 2.9342],
+      ["Chantilly", 49.1939, 2.4556],
+      // Marne (8)
+      ["Reims", 49.2583, 4.0317],
+      ["Châlons-en-Champagne", 48.9569, 4.3653],
+      ["Épernay", 49.0419, 3.9600],
+      ["Vitry-le-François", 48.7244, 4.5800],
+      ["Sézanne", 48.7194, 3.7228],
+      ["Sainte-Menehould", 49.0894, 4.8981],
+      ["Mourmelon-le-Grand", 49.1444, 4.3667],
+      ["Fismes", 49.3097, 3.6825],
+      // Ardennes (1)
+      ["Charleville-Mézières", 49.7722, 4.7175]
+    ]
+  }
+};
+
+/* Codes météo WMO → français factuel (pas de termes poussés) */
+const WMO = {
+  0: "ciel dégagé",
+  1: "peu nuageux",
+  2: "partiellement nuageux",
+  3: "couvert",
+  45: "brouillard",
+  48: "brouillard givrant",
+  51: "bruine",
+  53: "bruine",
+  55: "bruine dense",
+  56: "bruine verglaçante",
+  57: "bruine verglaçante",
+  61: "pluie faible",
+  63: "pluie",
+  65: "pluie forte",
+  66: "pluie verglaçante",
+  67: "pluie verglaçante",
+  71: "neige faible",
+  73: "neige",
+  75: "neige forte",
+  77: "grains de neige",
+  80: "averses",
+  81: "averses",
+  82: "averses violentes",
+  85: "averses de neige",
+  86: "averses de neige",
+  95: "orage",
+  96: "orage avec grêle",
+  99: "orage violent"
+};
+
+/* Exemples de style (few-shot) — fournis par Andrea Media */
+const STYLE_EXAMPLES = `
+Exemple 1 — RÉSEAU
+« Le beau temps se poursuit, ce jeudi s'annonce encore lumineux avec un soleil bien présent toute la journée, un ciel globalement dégagé, même si dans le sud de la région, dans l'Oise notamment, des orages pourraient faire leurs apparitions en soirée, donc prudence. Les températures 9 à 13 degrés ce matin, cet après-midi jusqu'à 21 degrés à Calais, Amiens et Valenciennes, 22 à Lille et Compiègne, Arras également et localement 23 degrés à Reims et Charleville-Mézières. »
+
+Exemple 2 — MÉTROPOLE LILLOISE
+« Encore une journée ensoleillée ce jeudi sur la métropole lilloise, le ciel reste largement dégagé du matin au soir avec une ambiance toujours aussi agréable, les températures entre 11 et 14 degrés ce matin, jusqu'à 22 degrés l'après-midi pour Saint-André, Armentières et Lesquin. »
+
+Exemple 3 — NORD
+« Encore une journée ensoleillée ce jeudi dans le nord, le ciel reste largement dégagé du matin au soir avec une ambiance toujours aussi agréable, les températures entre 11 et 14 degrés ce matin, jusqu'à 21 degrés dans l'après-midi à Valenciennes, Orchies et Maubeuge et 22 à Fourmies et Hazebrouck. »
+
+Exemple 4 — PAS-DE-CALAIS
+« Encore une journée ensoleillée ce jeudi dans le Pas-de-Calais, le ciel reste largement dégagé du matin au soir avec une ambiance toujours aussi agréable, les températures entre 11 et 14 degrés ce matin, jusqu'à 21 degrés dans l'après-midi à Berck, Montreuil et Saint-Omer, 22 à Calais et Béthune, et 23 degrés à Boulogne et Lens. »
+
+Exemple 5 — PICARDIE
+« Encore une journée ensoleillée ce jeudi en Picardie, le ciel reste largement dégagé du matin au soir avec une ambiance toujours aussi agréable, les températures entre 11 et 14 degrés ce matin, jusqu'à 21 degrés dans l'après-midi à Saint-Quentin, Amiens et Doullens, et 22 pour Laon, Albert et Creil. »
+
+Exemple 6 — MARNE
+« Encore une journée ensoleillée ce jeudi dans la Marne, le ciel reste largement dégagé du matin au soir avec une ambiance toujours aussi agréable, les températures entre 11 et 14 degrés ce matin, jusqu'à 21 degrés dans l'après-midi à Reims, Fismes et Prunay, 22 à Châlons-en-Champagne, Vitry-le-François et Épernay. »
+`.trim();
+
+const RULES = `
+RÈGLES DE RÉDACTION (à respecter strictement) :
+1. Structure : commencer par le temps (ciel, pluie, vent, brouillard, orage), finir par les températures.
+2. Ton : chaleureux et factuel, style radio locale, phrases naturelles à l'oral. Pas de superlatifs, pas de jargon météo technique.
+3. Termes météo : strictement factuels — soleil, ciel dégagé, nuages, couvert, pluie, brouillard, averses, orage. Pas de termes poussés ou littéraires.
+4. Températures matin : donner la fourchette sous la forme "entre X et Y degrés ce matin".
+5. Températures après-midi : grouper par palier de température, avec 2 à 3 villes par palier.
+   - Pour chaque palier, mélanger si possible 1 grande + 1 moyenne + 1 petite ville.
+   - Si seulement 2 villes à ce palier, ne pas citer de petite.
+6. Extrapolation autorisée : si une seule température apparaît sur la zone, tu peux citer la T°−1 à côté pour pouvoir mentionner plus de villes (ex : 21° → aussi 20° si la différence est faible).
+7. Zone imposée : tu cites EXCLUSIVEMENT des villes de la liste "Détail par ville" fournie. N'invente pas de ville, n'en ajoute pas d'autre.
+8. Longueur cible : 50 à 90 mots.
+9. Sortie : texte brut uniquement, prêt à être lu à l'antenne. Pas de titre, pas de guillemets, pas d'emoji, pas de retour à la ligne multiple.
+10. IMPORTANT : les exemples ci-dessous illustrent le STYLE et la STRUCTURE. N'invente pas un temps "ensoleillé" si les données indiquent de la pluie. Utilise EXCLUSIVEMENT les données météo fournies.
+`.trim();
+
+/* =========================================================
+   STATE
+   ========================================================= */
+const state = {
+  zone: null,
+  moment: 'journee',
+  date: null
+};
+
+/* =========================================================
+   INIT
+   ========================================================= */
+function initApp() {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${yyyy}-${mm}-${dd}`;
+
+  const maxDate = new Date(today.getTime() + 14 * 24 * 3600 * 1000);
+  const mxY = maxDate.getFullYear();
+  const mxM = String(maxDate.getMonth() + 1).padStart(2, '0');
+  const mxD = String(maxDate.getDate()).padStart(2, '0');
+
+  const dateInput = document.getElementById('customDate');
+  dateInput.value = todayStr;
+  dateInput.min = todayStr;
+  dateInput.max = `${mxY}-${mxM}-${mxD}`;
+  state.date = todayStr;
+
+  document.querySelectorAll('.zone-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.zone-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.zone = btn.dataset.zone;
+      updateUI();
+    });
+  });
+
+  dateInput.addEventListener('change', (e) => {
+    state.date = e.target.value;
+    updateUI();
+  });
+
+  document.getElementById('generateBtn').addEventListener('click', generateBulletin);
+  document.getElementById('copyBtn').addEventListener('click', copyBulletin);
+
+  document.getElementById('dataToggle').addEventListener('click', () => {
+    document.getElementById('dataToggle').classList.toggle('open');
+    document.getElementById('dataContent').classList.toggle('open');
+  });
+
+  updateUI();
+}
+
+function updateUI() {
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = !state.zone || !state.date;
+
+  const title = document.getElementById('bulletinTitle');
+  if (state.zone && state.date) {
+    title.textContent = `Bulletin météo — ${ZONES[state.zone].label} — Journée du ${formatDateFR(state.date)}`;
+  } else {
+    title.textContent = 'Bulletin météo';
+  }
+}
+
+function formatDateFR(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+/* =========================================================
+   OPEN-METEO FETCH
+   ========================================================= */
+async function fetchWeather(zone, dateStr) {
+  const cities = ZONES[zone].cities;
+  const lats = cities.map(c => c[1]).join(',');
+  const lngs = cities.map(c => c[2]).join(',');
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lngs}&hourly=temperature_2m,weather_code&timezone=Europe%2FParis&start_date=${dateStr}&end_date=${dateStr}`;
+
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Open-Meteo a répondu ${res.status}`);
+  }
+  let data = await res.json();
+  // Si une seule ville : data est un objet, on le met dans un tableau
+  if (!Array.isArray(data)) data = [data];
+
+  if (data.length !== cities.length) {
+    console.warn('Mismatch villes/réponses', cities.length, data.length);
+  }
+
+  return data.map((d, i) => {
+    const times = d.hourly.time;
+    const temps = d.hourly.temperature_2m;
+    const codes = d.hourly.weather_code;
+    const morningTemps = [], afternoonTemps = [];
+    const morningCodes = [], afternoonCodes = [];
+    for (let k = 0; k < times.length; k++) {
+      const h = parseInt(times[k].split('T')[1].split(':')[0], 10);
+      if (h >= 6 && h < 12) { morningTemps.push(temps[k]); morningCodes.push(codes[k]); }
+      else if (h >= 12 && h < 18) { afternoonTemps.push(temps[k]); afternoonCodes.push(codes[k]); }
+    }
+    return {
+      city: cities[i][0],
+      lat: cities[i][1],
+      lng: cities[i][2],
+      morning_min: Math.round(Math.min(...morningTemps)),
+      morning_max: Math.round(Math.max(...morningTemps)),
+      afternoon_max: Math.round(Math.max(...afternoonTemps)),
+      morning_codes: morningCodes,
+      afternoon_codes: afternoonCodes,
+      dom_code_morning: modeOf(morningCodes),
+      dom_code_afternoon: modeOf(afternoonCodes)
+    };
+  });
+}
+
+function modeOf(arr) {
+  const counts = {};
+  arr.forEach(v => counts[v] = (counts[v] || 0) + 1);
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  return parseInt(entries[0][0], 10);
+}
+
+/* =========================================================
+   PROMPT BUILDER
+   ========================================================= */
+function buildPrompt(zone, perCity, dateStr) {
+  const zoneLabel = ZONES[zone].label;
+  const dateLabel = formatDateFR(dateStr);
+
+  const zoneMorningMin = Math.min(...perCity.map(c => c.morning_min));
+  const zoneMorningMax = Math.max(...perCity.map(c => c.morning_max));
+
+  const allMorningCodes = perCity.flatMap(c => c.morning_codes);
+  const allAfternoonCodes = perCity.flatMap(c => c.afternoon_codes);
+  const domMorning = modeOf(allMorningCodes);
+  const domAfternoon = modeOf(allAfternoonCodes);
+
+  // Phénomènes localisés
+  const severeAft = perCity.filter(c => {
+    const code = c.dom_code_afternoon;
+    return code !== domAfternoon && (code >= 51 || code === 45 || code === 48);
+  });
+
+  const perCityStr = perCity
+    .sort((a, b) => b.afternoon_max - a.afternoon_max)
+    .map(c => `- ${c.city}: matin ${c.morning_min}°/${c.morning_max}° (${WMO[c.dom_code_morning] || 'n/d'}), après-midi max ${c.afternoon_max}° (${WMO[c.dom_code_afternoon] || 'n/d'})`)
+    .join('\n');
+
+  return `Tu es rédacteur de bulletins météo pour une radio locale (Andrea Media). Rédige un bulletin prêt à lire à l'antenne.
+
+${RULES}
+
+EXEMPLES DE STYLE (structure et ton à imiter — ne pas recopier le contenu) :
+${STYLE_EXAMPLES}
+
+DONNÉES MÉTÉO À UTILISER (source : Open-Meteo, journée du ${dateLabel}) :
+
+Zone : ${zoneLabel}
+Fourchette des températures matinales (6h-12h) sur la zone : ${zoneMorningMin}° à ${zoneMorningMax}°
+Temps dominant le matin : ${WMO[domMorning] || 'n/d'}
+Temps dominant l'après-midi : ${WMO[domAfternoon] || 'n/d'}
+${severeAft.length > 0 ? 'Phénomènes localisés l\'après-midi : ' + severeAft.map(c => `${c.city} (${WMO[c.dom_code_afternoon] || 'n/d'})`).join(', ') : 'Pas de phénomène localisé notable l\'après-midi.'}
+
+Détail par ville (triés du plus chaud au plus frais en après-midi) :
+${perCityStr}
+
+Rédige maintenant le bulletin pour la journée du ${dateLabel} sur la zone "${zoneLabel}". Texte brut uniquement, prêt à être lu à l'antenne.`;
+}
+
+/* =========================================================
+   GENERATE
+   ========================================================= */
+async function generateBulletin() {
+  if (!state.zone || !state.date) return;
+
+  const btn = document.getElementById('generateBtn');
+  const status = document.getElementById('statusMsg');
+  const bulletinText = document.getElementById('bulletinText');
+  const errorBox = document.getElementById('errorBox');
+  const copyBtn = document.getElementById('copyBtn');
+
+  btn.disabled = true;
+  copyBtn.disabled = true;
+  errorBox.innerHTML = '';
+  status.textContent = `Récupération des données météo (${ZONES[state.zone].cities.length} villes)…`;
+  status.classList.add('loading');
+  bulletinText.innerHTML = '<span class="bulletin-placeholder">Bulletin en cours de rédaction…</span>';
+  bulletinText.classList.add('loading');
+
+  try {
+    const perCity = await fetchWeather(state.zone, state.date);
+    status.textContent = 'Rédaction du bulletin par l\'IA…';
+
+    const prompt = buildPrompt(state.zone, perCity, state.date);
+
+    const res = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+
+    const json = await res.json();
+
+    if (json.error) {
+      throw new Error(json.error + (json.details ? '\n' + JSON.stringify(json.details, null, 2) : ''));
+    }
+
+    bulletinText.textContent = (json.text || '').trim() || '(Réponse vide)';
+    copyBtn.disabled = false;
+
+    renderDataTable(perCity);
+    status.textContent = '✓ Bulletin généré';
+    setTimeout(() => { status.textContent = ''; }, 4000);
+  } catch (err) {
+    errorBox.innerHTML = `<div class="error-box">Erreur : ${escapeHtml(err.message)}</div>`;
+    bulletinText.innerHTML = '<span class="bulletin-placeholder">Échec. Voir l\'erreur ci-dessus.</span>';
+    status.textContent = '';
+  } finally {
+    btn.disabled = false;
+    status.classList.remove('loading');
+    bulletinText.classList.remove('loading');
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* =========================================================
+   DATA TABLE
+   ========================================================= */
+function renderDataTable(perCity) {
+  const html = `
+    <div class="data-summary">${perCity.length} villes interrogées via Open-Meteo, triées par température max après-midi (plus chaud → plus frais)</div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Ville</th>
+          <th>Matin (min / max)</th>
+          <th>Après-midi (max)</th>
+          <th>Temps matin</th>
+          <th>Temps après-midi</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${perCity.map(c => `
+          <tr>
+            <td>${escapeHtml(c.city)}</td>
+            <td class="num">${c.morning_min}° / ${c.morning_max}°</td>
+            <td class="num"><strong>${c.afternoon_max}°</strong></td>
+            <td>${WMO[c.dom_code_morning] || '—'}</td>
+            <td>${WMO[c.dom_code_afternoon] || '—'}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+  document.getElementById('dataContent').innerHTML = html;
+}
+
+/* =========================================================
+   COPY
+   ========================================================= */
+function copyBulletin() {
+  const text = document.getElementById('bulletinText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    const originalText = btn.textContent;
+    btn.classList.add('copied');
+    btn.textContent = 'Copié ✓';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.textContent = originalText;
+    }, 1600);
+  });
+}
+
+initApp();
+</script>
+</body>
+</html>
