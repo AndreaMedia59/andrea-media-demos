@@ -73,7 +73,12 @@
   .data-table tr:hover td { background: #162e48; }
   .data-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
-  .footer-note { font-size: 0.7rem; color: #4a6e8e; text-align: center; padding: 12px 0 24px; letter-spacing: 0.3px; }
+  .footer-actions { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .btn-reset-memory { background: transparent; color: #7aa0b8; border: 1px solid #1e3a58; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.3px; transition: all 0.12s; }
+  .btn-reset-memory:hover { background: #162840; color: #e94560; border-color: #b33050; }
+  .btn-reset-memory.done { background: #185e2c; border-color: #185e2c; color: #fff; }
+  .memory-hint { font-size: 0.68rem; color: #4a6e8e; font-style: italic; }
+  .footer-note { font-size: 0.7rem; color: #4a6e8e; text-align: center; padding: 4px 0 24px; letter-spacing: 0.3px; }
 
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
   .loading { animation: pulse 1.2s ease-in-out infinite; }
@@ -134,6 +139,10 @@
     <div class="data-content" id="dataContent"><em style="color:#4a6e8e;">Générez un bulletin pour afficher les données.</em></div>
   </div>
 
+  <div class="footer-actions">
+    <button id="resetMemoryBtn" class="btn-reset-memory" title="Efface l'historique des bulletins générés (stocké dans ton navigateur uniquement)">↻ Réinitialiser la mémoire de style</button>
+    <span class="memory-hint">Les 5 derniers bulletins par zone sont mémorisés pour éviter la répétition de tournures.</span>
+  </div>
   <div class="footer-note">Andrea Media — Module « Contenu local » · Sous-module Météo · Démo</div>
 </main>
 
@@ -486,6 +495,45 @@ const state = {
 };
 
 /* =========================================================
+   HISTORIQUE DE STYLE (anti-répétition)
+   Stocke les derniers bulletins générés par zone dans localStorage,
+   puis les injecte dans le prompt pour forcer l'IA à varier.
+   ========================================================= */
+const HISTORY_MAX = 5;           // entrées max stockées par zone (rolling)
+const HISTORY_IN_PROMPT = 3;     // entrées max injectées dans le prompt IA
+
+function historyKey(zoneKey) { return `meteo_history_${zoneKey}`; }
+
+function saveToHistory(zoneKey, dateStr, text) {
+  try {
+    const existing = JSON.parse(localStorage.getItem(historyKey(zoneKey)) || '[]');
+    const updated = [{ date: dateStr, text, ts: Date.now() }, ...existing].slice(0, HISTORY_MAX);
+    localStorage.setItem(historyKey(zoneKey), JSON.stringify(updated));
+  } catch (e) { /* quota plein / navigation privée : on ignore */ }
+}
+
+function getRecentHistory(zoneKey) {
+  try {
+    const items = JSON.parse(localStorage.getItem(historyKey(zoneKey)) || '[]');
+    return items.slice(0, HISTORY_IN_PROMPT);
+  } catch (e) { return []; }
+}
+
+function clearAllHistory() {
+  Object.keys(ZONES).forEach(z => {
+    try { localStorage.removeItem(historyKey(z)); } catch (e) {}
+  });
+}
+
+function formatHistorySection(recent) {
+  if (!recent || recent.length === 0) return '';
+  return `BULLETINS DÉJÀ GÉNÉRÉS POUR CETTE ZONE (anti-répétition) :
+Tu as déjà produit les ${recent.length} bulletin(s) ci-dessous sur cette même zone. Tu DOIS varier : change d'ouverture, d'enchaînements, de formulations, de connecteurs, de rythme. Ne répète pas les mêmes phrases, les mêmes tournures ou la même structure. Reste fidèle à ton ton parlé et aux règles, mais trouve d'autres façons de dire.
+
+${recent.map((e, i) => `— Précédent n°${i + 1} (${e.date}) —\n${e.text}`).join('\n\n')}`;
+}
+
+/* =========================================================
    INIT
    ========================================================= */
 function initApp() {
@@ -525,6 +573,15 @@ function initApp() {
   document.getElementById('dataToggle').addEventListener('click', () => {
     document.getElementById('dataToggle').classList.toggle('open');
     document.getElementById('dataContent').classList.toggle('open');
+  });
+
+  document.getElementById('resetMemoryBtn').addEventListener('click', () => {
+    clearAllHistory();
+    const btn = document.getElementById('resetMemoryBtn');
+    const original = btn.textContent;
+    btn.classList.add('done');
+    btn.textContent = '✓ Mémoire effacée';
+    setTimeout(() => { btn.classList.remove('done'); btn.textContent = original; }, 1800);
   });
 
   updateUI();
@@ -665,13 +722,15 @@ function buildPrompt(zone, perCity, dateStr) {
     ? '\n\n⚠️ ZONE RÉSEAU : ton bulletin DOIT citer au moins 1 ville dans CHACUNE des 6 sous-zones ci-dessous (MEL, Nord, Pas-de-Calais, Picardie, Marne, Ardennes). Distribue les villes sur les différents paliers de température.'
     : '';
 
+  const historySection = formatHistorySection(getRecentHistory(zone));
+
   return `Tu es rédacteur de bulletins météo pour une radio locale (Andrea Media). Rédige un bulletin prêt à lire à l'antenne.
 
 ${RULES}
 
 EXEMPLES DE STYLE (structure et ton à imiter — ne pas recopier le contenu) :
 ${STYLE_EXAMPLES}
-
+${historySection ? '\n' + historySection + '\n' : ''}
 DONNÉES MÉTÉO À UTILISER (source : Météo France — modèle AROME HD, journée du ${dateLabel}) :
 
 Zone : ${zoneLabel}
@@ -716,10 +775,15 @@ async function generateOne(zoneKey, dateStr) {
   if (json.error) {
     throw new Error(json.error + (json.details ? '\n' + JSON.stringify(json.details, null, 2) : ''));
   }
+  const text = (json.text || '').trim();
+  // Sauvegarde dans l'historique local uniquement en cas de succès réel
+  if (text) {
+    saveToHistory(zoneKey, dateStr, text);
+  }
   return {
     zoneKey,
     zoneLabel: ZONES[zoneKey].label,
-    text: (json.text || '').trim() || '(Réponse vide)',
+    text: text || '(Réponse vide)',
     perCity
   };
 }
