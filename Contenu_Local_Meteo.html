@@ -130,7 +130,7 @@
   </div>
 
   <div class="data-card">
-    <div class="data-title" id="dataToggle">Données météo détaillées (source Open-Meteo)</div>
+    <div class="data-title" id="dataToggle">Données météo détaillées (source Météo France — AROME HD via Open-Meteo)</div>
     <div class="data-content" id="dataContent"><em style="color:#4a6e8e;">Générez un bulletin pour afficher les données.</em></div>
   </div>
 
@@ -547,7 +547,9 @@ async function fetchWeather(zone, dateStr) {
   const cities = ZONES[zone].cities;
   const lats = cities.map(c => c[1]).join(',');
   const lngs = cities.map(c => c[2]).join(',');
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lngs}&hourly=temperature_2m,weather_code&timezone=Europe%2FParis&start_date=${dateStr}&end_date=${dateStr}`;
+  // Endpoint Météo France (modèles AROME France HD + ARPEGE Europe en fallback au-delà de ~48h).
+  // Plus précis que l'endpoint /v1/forecast pour la France métropolitaine.
+  const url = `https://api.open-meteo.com/v1/meteofrance?latitude=${lats}&longitude=${lngs}&hourly=temperature_2m,weather_code&timezone=Europe%2FParis&start_date=${dateStr}&end_date=${dateStr}`;
 
   const res = await fetch(url);
   if (!res.ok) {
@@ -670,7 +672,7 @@ ${RULES}
 EXEMPLES DE STYLE (structure et ton à imiter — ne pas recopier le contenu) :
 ${STYLE_EXAMPLES}
 
-DONNÉES MÉTÉO À UTILISER (source : Open-Meteo, journée du ${dateLabel}) :
+DONNÉES MÉTÉO À UTILISER (source : Météo France — modèle AROME HD, journée du ${dateLabel}) :
 
 Zone : ${zoneLabel}
 Nombre de villes dans la zone : ${total}
@@ -843,7 +845,7 @@ function renderDataTable(perCity) {
   const hasSubzone = perCity.some(c => c.subzone);
   const sorted = [...perCity].sort((a, b) => a.afternoon_max - b.afternoon_max);
   const html = `
-    <div class="data-summary">${perCity.length} villes interrogées via Open-Meteo, triées par température max après-midi (plus frais → plus chaud)</div>
+    <div class="data-summary">${perCity.length} villes interrogées (modèle Météo France AROME HD), triées par température max après-midi (plus frais → plus chaud)</div>
     <table class="data-table">
       <thead>
         <tr>
