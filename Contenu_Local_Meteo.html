@@ -67,7 +67,9 @@
   .map-legend { display: flex; gap: 4px; align-items: center; font-size: 0.65rem; color: #7aa0b8; text-transform: none; letter-spacing: 0; }
   .map-legend .swatch { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
   #zoneMap { width: 100%; height: 460px; border-radius: 4px; background: #0a1525; z-index: 1; }
-  .temp-circle { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.82rem; border: 2px solid rgba(255,255,255,0.35); box-shadow: 0 2px 8px rgba(0,0,0,0.6); font-family: Arial, sans-serif; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+  .temp-marker { width: 52px; height: 52px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 2px; color: #fff; font-weight: 700; font-family: Arial, sans-serif; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.45); }
+  .temp-marker .wx-icon { font-size: 1.1rem; line-height: 1; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.4)); }
+  .temp-marker .wx-temp { font-size: 0.86rem; line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
   /* Overrides thème sombre pour Leaflet */
   .leaflet-popup-content-wrapper { background: #0e1c2d; color: #d0e4f0; border: 1px solid #1a3550; border-radius: 4px; }
   .leaflet-popup-tip { background: #0e1c2d; border: 1px solid #1a3550; }
@@ -966,12 +968,44 @@ function initMap() {
     zoomControl: true,
     attributionControl: true
   }).setView([49.8, 2.9], 7); // vue par défaut centrée sur les Hauts-de-France
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
     subdomains: 'abcd',
-    maxZoom: 18
+    maxZoom: 19
   }).addTo(mapInstance);
 }
+
+/* Mapping WMO → emoji météo (rendu identique tous navigateurs modernes) */
+const WMO_EMOJI = {
+  0: '☀️',      // ciel dégagé
+  1: '🌤️',      // peu nuageux
+  2: '⛅',      // partiellement nuageux
+  3: '☁️',      // couvert
+  45: '🌫️',     // brouillard
+  48: '🌫️',     // brouillard givrant
+  51: '🌦️',     // bruine légère
+  53: '🌦️',     // bruine modérée
+  55: '🌦️',     // bruine dense
+  56: '🌧️',     // bruine verglaçante
+  57: '🌧️',     // bruine verglaçante
+  61: '🌧️',     // pluie faible
+  63: '🌧️',     // pluie modérée
+  65: '🌧️',     // pluie forte
+  66: '🌧️',     // pluie verglaçante
+  67: '🌧️',     // pluie verglaçante forte
+  71: '🌨️',     // neige faible
+  73: '🌨️',     // neige modérée
+  75: '❄️',     // neige forte
+  77: '❄️',     // grains de neige
+  80: '🌦️',     // averses faibles
+  81: '🌧️',     // averses modérées
+  82: '🌧️',     // averses violentes
+  85: '🌨️',     // averses de neige faibles
+  86: '🌨️',     // averses de neige fortes
+  95: '⛈️',     // orage
+  96: '⛈️',     // orage avec grêle
+  99: '⛈️'      // orage violent
+};
 
 /**
  * Interpole linéairement entre 2 couleurs hex.
@@ -1031,12 +1065,13 @@ function renderMap(perCity) {
   const bounds = [];
   perCity.forEach(c => {
     const color = colorForTemp(c.afternoon_max);
-    const html = `<div class="temp-circle" style="background-color:${color};">${c.afternoon_max}°</div>`;
-    const icon = L.divIcon({ className: '', html, iconSize: [42, 42], iconAnchor: [21, 21] });
+    const emoji = WMO_EMOJI[c.dom_code_afternoon] || '·';
+    const html = `<div class="temp-marker" style="background-color:${color};"><span class="wx-icon">${emoji}</span><span class="wx-temp">${c.afternoon_max}°</span></div>`;
+    const icon = L.divIcon({ className: '', html, iconSize: [52, 52], iconAnchor: [26, 26] });
     const marker = L.marker([c.lat, c.lng], { icon }).addTo(mapInstance);
     const popupHtml = `<strong>${escapeHtml(c.city)}</strong><br>
-      Après-midi : <strong>${c.afternoon_max}°</strong> — ${WMO[c.dom_code_afternoon] || 'n/d'}<br>
-      <small>Matin : ${c.morning_min}° / ${c.morning_max}° — ${WMO[c.dom_code_morning] || 'n/d'}</small>`;
+      Après-midi : <strong>${c.afternoon_max}°</strong> ${emoji} ${WMO[c.dom_code_afternoon] || 'n/d'}<br>
+      <small>Matin : ${c.morning_min}° / ${c.morning_max}° ${WMO_EMOJI[c.dom_code_morning] || ''} ${WMO[c.dom_code_morning] || 'n/d'}</small>`;
     marker.bindPopup(popupHtml);
     mapMarkers.push(marker);
     bounds.push([c.lat, c.lng]);
