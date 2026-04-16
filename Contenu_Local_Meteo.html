@@ -438,29 +438,36 @@ RÈGLES DE RÉDACTION (à respecter strictement) :
 
 4. Températures matin : donner la fourchette sous la forme « entre X et Y degrés ce matin ».
 
-5. Températures après-midi : grouper par palier de température, avec 2 à 3 villes par palier.
-   - Mélanger si possible 1 grande + 1 moyenne + 1 petite ville par palier.
-   - Si seulement 2 villes à ce palier, ne pas citer de petite.
-   - OBLIGATOIRE : énoncer les paliers DU PLUS BAS AU PLUS HAUT (la plus basse en premier, la plus haute en dernier). Ex : « 21° à V1, V2, V3 ; 22° à V4, V5 ; localement 23° à V6 et V7 ».
+5. Températures après-midi — FORMAT FIXE :
+   - Zones départementales / régionales (Métropole Lilloise, Nord, Pas-de-Calais, Picardie, Marne) : EXACTEMENT 2 paliers de température adjacents (T et T+1°), 2 villes par palier → 4 villes citées au total.
+   - Zone « Réseau » (spéciale) : EXACTEMENT 3 paliers de température adjacents (T, T+1°, T+2°), 2 villes par palier → 6 villes citées au total (1 par sous-zone).
+   - TOUJOURS énoncer du plus bas au plus haut. Ex : « jusqu'à 21° à V1 et V2, 22° à V3 et V4 » (et pour Réseau « et localement 23° à V5 et V6 »).
 
-6. SYNTHÈSE du temps — parler au plus grand nombre, pas au micro-local :
+6. SPREAD GÉOGRAPHIQUE — OBLIGATOIRE :
+   - Les villes citées doivent COUVRIR le département / la région, pas être concentrées autour d'un même pôle urbain.
+   - Nord : ne pas tout mettre autour de Valenciennes — mélanger Dunkerquois (Dunkerque, Gravelines, Bergues), Flandre (Hazebrouck, Bailleul, Cassel), Avesnois (Maubeuge, Fourmies, Avesnes-sur-Helpe) et Valenciennois/Douaisis.
+   - Pas-de-Calais : mélanger côte (Calais, Boulogne, Berck, Le Touquet) et intérieur (Arras, Lens, Béthune, Saint-Omer).
+   - Picardie : mélanger Somme (Amiens, Abbeville, Péronne), Oise (Beauvais, Compiègne, Creil) et Aisne (Saint-Quentin, Laon, Soissons).
+   - Marne : mélanger Rémois (Reims, Fismes), Châlonnais (Châlons-en-Champagne, Suippes), Épernay/Vitry et nord-est de la Marne.
+   - Métropole Lilloise : répartir sur plusieurs communes distinctes (pas seulement Lille et sa couronne proche — inclure Armentières, Seclin, Halluin, Comines…).
+   - Réseau : les 6 villes citées doivent venir de 6 sous-zones différentes (MEL, Nord, Pas-de-Calais, Picardie, Marne, Ardennes) — UNE par sous-zone.
+
+7. SYNTHÈSE du temps — parler au plus grand nombre, pas au micro-local :
    - Si la majorité de la zone est au soleil et que 2-3 villes seulement ont de la bruine, NE PAS mentionner la bruine.
    - Si le ciel est partagé (moitié soleil / moitié nuages), dire « du soleil avec quelques passages nuageux », « un ciel mélangé », « le soleil et les nuages vont se partager la journée » — varier les tournures.
    - Ne mentionner un phénomène localisé QUE s'il touche au moins un tiers de la zone OU s'il est significatif (orage, neige, brouillard dense).
 
-7. VARIER le vocabulaire d'un bulletin à l'autre. Ne pas réutiliser systématiquement « Encore une journée ensoleillée » ou « Le beau temps se poursuit ». Adapter l'ouverture au temps réel observé dans les données.
+8. VARIER le vocabulaire d'un bulletin à l'autre. Ne pas réutiliser systématiquement « Encore une journée ensoleillée » ou « Le beau temps se poursuit ». Adapter l'ouverture au temps réel observé dans les données.
 
-8. Extrapolation autorisée : si une seule température apparaît sur la zone, tu peux citer la T°−1 à côté pour pouvoir mentionner plus de villes (ex : 21° → aussi 20° si l'écart est faible).
+9. Extrapolation des températures : AUTORISÉE ET ATTENDUE. Objectif = avoir 2 paliers adjacents (3 pour Réseau). Si toutes les villes sont à 21°, présente quand même « 20° à V1 et V2, 21° à V3 et V4 » (attribue librement les villes entre les paliers, la tolérance est de ±1°).
 
-9. Zone imposée : tu cites EXCLUSIVEMENT des villes de la liste "Détail par ville" fournie. N'invente pas de ville, n'en ajoute pas d'autre.
+10. Zone imposée : tu cites EXCLUSIVEMENT des villes de la liste "Détail par ville" fournie. N'invente pas de ville.
 
-10. Longueur cible : 50 à 90 mots.
+11. Longueur cible : 40 à 70 mots pour les zones départementales, 60 à 90 mots pour le Réseau.
 
-11. Sortie : texte brut uniquement, prêt à être lu à l'antenne. Pas de titre, pas de guillemets, pas d'emoji, pas de retour à la ligne multiple, pas de points-virgules.
+12. Sortie : texte brut uniquement, prêt à être lu à l'antenne. Pas de titre, pas de guillemets, pas d'emoji, pas de retour à la ligne multiple, pas de points-virgules.
 
-12. IMPORTANT : les exemples ci-dessous illustrent le STYLE et la STRUCTURE. Ne recopie pas leur contenu. Utilise EXCLUSIVEMENT les données météo fournies plus bas. N'écris pas "ensoleillé" si les données indiquent du couvert.
-
-13. CAS PARTICULIER « RÉSEAU » : si la zone est "Réseau", ton bulletin doit IMPÉRATIVEMENT citer au moins une ville de CHACUNE des 6 sous-zones : Métropole Lilloise, Nord (hors MEL), Pas-de-Calais, Picardie, Marne et Ardennes. Réparties les villes choisies dans les différents paliers de température.
+13. IMPORTANT : les exemples ci-dessous illustrent le STYLE et la STRUCTURE (pas le nombre de villes — les anciens exemples citaient plus de villes). Utilise EXCLUSIVEMENT les données météo fournies plus bas.
 `.trim();
 
 /* =========================================================
@@ -619,6 +626,13 @@ function buildPrompt(zone, perCity, dateStr) {
   const morningDist = distBy('dom_code_morning');
   const afternoonDist = distBy('dom_code_afternoon');
 
+  // Distribution des températures max après-midi (pour choisir les 2 ou 3 paliers adjacents)
+  const tempCounts = {};
+  perCity.forEach(c => { tempCounts[c.afternoon_max] = (tempCounts[c.afternoon_max] || 0) + 1; });
+  const tempDist = Object.keys(tempCounts).map(Number).sort((a, b) => a - b)
+    .map(t => `  • ${t}° : ${tempCounts[t]} ville${tempCounts[t] > 1 ? 's' : ''}`)
+    .join('\n');
+
   // Tri ascendant (du plus frais au plus chaud) pour aligner avec la règle de rédaction
   const sorted = [...perCity].sort((a, b) => a.afternoon_max - b.afternoon_max);
 
@@ -671,6 +685,11 @@ Répartition du temps L'APRÈS-MIDI (par ville, triée du plus représenté) :
 ${afternoonDist}
 
 → À toi de SYNTHÉTISER : regarde les pourcentages. Si un type de temps représente >60%, c'est dominant. Entre 30% et 60%, c'est un mix à décrire ("soleil avec passages nuageux", "ciel mélangé"…). En-dessous de 30%, c'est minoritaire — à ignorer sauf si c'est grave (orage, neige, brouillard dense).
+
+Distribution des températures max après-midi sur la zone :
+${tempDist}
+
+→ Choisis ${zone === 'reseau' ? '3 paliers adjacents (T, T+1°, T+2°)' : '2 paliers adjacents (T et T+1°)'} en t'appuyant sur cette distribution. Si la température est concentrée sur une seule valeur, extrapole à ±1° pour créer le second palier. Attribue ${zone === 'reseau' ? '2 villes par palier (6 au total, 1 par sous-zone)' : '2 villes par palier (4 au total, géographiquement réparties)'}.
 
 Détail par ville (triées du plus frais au plus chaud en après-midi${zone === 'reseau' ? ', regroupées par sous-zone' : ''}) :
 ${perCityStr}${reseauReminder}
