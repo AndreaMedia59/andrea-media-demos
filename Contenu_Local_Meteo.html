@@ -651,11 +651,21 @@ async function fetchWeather(zone, dateStr) {
   // Plus précis que l'endpoint /v1/forecast pour la France métropolitaine.
   const url = `https://api.open-meteo.com/v1/meteofrance?latitude=${lats}&longitude=${lngs}&hourly=temperature_2m,weather_code&timezone=Europe%2FParis&start_date=${dateStr}&end_date=${dateStr}`;
 
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Open-Meteo a répondu ${res.status}`);
+  // Retry automatique sur 429 (rate limit) — backoff exponentiel 0.8s / 1.6s / 3.2s
+  let data;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const res = await fetch(url);
+    if (res.ok) {
+      data = await res.json();
+      break;
+    }
+    if (res.status === 429 && attempt < 3) {
+      await new Promise(r => setTimeout(r, 800 * Math.pow(2, attempt)));
+      continue;
+    }
+    throw new Error(`Open-Meteo a répondu ${res.status}${res.status === 429 ? ' (rate limit, après 3 tentatives)' : ''}`);
   }
-  let data = await res.json();
+  if (!data) throw new Error('Open-Meteo : pas de données');
   // Si une seule ville : data est un objet, on le met dans un tableau
   if (!Array.isArray(data)) data = [data];
 
@@ -865,7 +875,13 @@ async function generateBulletin() {
   `).join('');
 
   try {
-    const results = await Promise.allSettled(zoneKeys.map(zk => generateOne(zk, state.date)));
+    // En mode "Toutes les zones", on étale légèrement les départs (150 ms) pour réduire les 429 d'Open-Meteo
+    const results = await Promise.allSettled(zoneKeys.map(async (zk, i) => {
+      if (isAll && i > 0) {
+        await new Promise(r => setTimeout(r, i * 150));
+      }
+      return generateOne(zk, state.date);
+    }));
 
     const rendered = results.map((r, i) => ({
       zoneKey: zoneKeys[i],
