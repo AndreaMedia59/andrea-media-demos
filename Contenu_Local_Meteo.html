@@ -479,7 +479,12 @@ Exemple 6 — MARNE
 const RULES = `
 RÈGLES DE RÉDACTION (à respecter strictement) :
 
-1. Structure : commencer par le temps (ciel, pluie, vent, brouillard, orage), finir par les températures.
+1. Structure : commencer par le temps (ciel, pluie, vent, brouillard, orage), finir par les températures. Le bulletin S'ARRÊTE sur la dernière température citée — AUCUNE phrase de conclusion après les températures (pas de « Profitez bien de cette belle journée », « Bonne journée à tous », « À surveiller quand même », « Bref, une belle journée », etc.).
+   PHRASE DE LIAISON AUTORISÉE (et encouragée si elle apporte du relief) : tu peux glisser une courte formule d'ambiance AVANT les températures de l'après-midi, en l'intégrant à la phrase qui introduit les valeurs. Exemples :
+   - « Cet après-midi, vous allez pouvoir profiter d'une belle journée puisqu'on attend jusqu'à 21° à… »
+   - « L'après-midi s'annonce agréable avec jusqu'à 21° à… »
+   - « De quoi sortir couvert cet après-midi, il fera 14° à… »
+   Cette liaison remplace la phrase de fin — elle ne s'ajoute pas.
 
 2. TON PARLÉ — style oral radio, pas de publication écrite. Tu t'adresses à un auditeur, pas à un lecteur.
    INTERDIT (expressions écrites à bannir) : « sans phénomène notable à signaler », « tandis que », « tandis que d'autres villes », « par ailleurs », « on notera que », « il est à noter », « en effet », « d'autre part », « quant à », « force est de constater ».
@@ -679,16 +684,24 @@ async function fetchWeather(zone, dateStr) {
     const codes = d.hourly.weather_code;
     const morningTemps = [], afternoonTemps = [];
     const morningCodes = [], afternoonCodes = [];
+    // Température de référence "ce matin" = créneau 7h-9h (représentatif de l'heure antenne).
+    // Évite l'amplitude aube/midi qui donnait des fourchettes irréalistes (ex : 3° à 12°).
+    const morningRefTemps = [];
     for (let k = 0; k < times.length; k++) {
       const h = parseInt(times[k].split('T')[1].split(':')[0], 10);
       if (h >= 6 && h < 12) { morningTemps.push(temps[k]); morningCodes.push(codes[k]); }
       else if (h >= 12 && h < 18) { afternoonTemps.push(temps[k]); afternoonCodes.push(codes[k]); }
+      if (h >= 7 && h <= 9) { morningRefTemps.push(temps[k]); }
     }
+    const morningRef = morningRefTemps.length
+      ? morningRefTemps.reduce((a, b) => a + b, 0) / morningRefTemps.length
+      : Math.min(...morningTemps);
     return {
       city: cities[i][0],
       lat: cities[i][1],
       lng: cities[i][2],
       subzone: cities[i][3] || null,
+      morning_ref: Math.round(morningRef),
       morning_min: Math.round(Math.min(...morningTemps)),
       morning_max: Math.round(Math.max(...morningTemps)),
       afternoon_max: Math.round(Math.max(...afternoonTemps)),
@@ -714,8 +727,10 @@ function buildPrompt(zone, perCity, dateStr) {
   const zoneLabel = ZONES[zone].label;
   const dateLabel = formatDateFR(dateStr);
 
-  const zoneMorningMin = Math.min(...perCity.map(c => c.morning_min));
-  const zoneMorningMax = Math.max(...perCity.map(c => c.morning_max));
+  // Fourchette matinale = basée sur une température de référence 7h-9h par ville
+  // (pas min/max sur tout le créneau 6h-12h, qui donnait des écarts aberrants).
+  const zoneMorningMin = Math.min(...perCity.map(c => c.morning_ref));
+  const zoneMorningMax = Math.max(...perCity.map(c => c.morning_ref));
   const total = perCity.length;
 
   // Distribution du temps par ville (code dominant par ville) — l'IA synthétisera
