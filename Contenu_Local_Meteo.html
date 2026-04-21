@@ -8,81 +8,242 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Arial', sans-serif; background: #16253a; color: #d0e4f0; min-height: 100vh; }
+  body {
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    background: #0f2038;
+    color: #d0e4f0;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 240px 1fr;
+  }
 
-  header { background: #0e1c2d; padding: 10px 24px; border-bottom: 2px solid #145a90; }
-  .header-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
-  .header-bot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  header h1 { font-size: 0.85rem; color: #ffffff; font-weight: 400; letter-spacing: 0.4px; margin-top: 6px; }
+  /* ── SIDEBAR GAUCHE ─────────────────────────────────── */
+  .sidebar {
+    background: #132944;
+    border-right: 1px solid #1e3d60;
+    padding: 22px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-brand {
+    padding: 18px 6px;
+    border-bottom: 1px solid #1e3d60;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sidebar-logo {
+    width: 100%;
+    max-width: 110px;
+    height: auto;
+    max-height: 80px;
+    display: block;
+    object-fit: contain;
+  }
+  .sidebar-logo-fallback {
+    font-size: 0.72rem;
+    color: #4a6e8e;
+    text-transform: uppercase;
+    letter-spacing: 1.6px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .sidebar-logo-fallback strong { color: #d0e4f0; }
+  .sidebar-label {
+    font-size: 0.62rem;
+    color: #3a5a78;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: 700;
+    padding: 6px 12px 8px;
+  }
+  .zone-nav { display: flex; flex-direction: column; gap: 3px; }
+  .zone-btn {
+    background: transparent;
+    color: #7aa0b8;
+    border: 1px solid transparent;
+    padding: 10px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.82rem;
+    letter-spacing: 0.2px;
+    transition: all 0.12s;
+    text-align: left;
+    width: 100%;
+    position: relative;
+  }
+  .zone-btn:hover:not(.active) { background: #1a3050; color: #e8f2fa; }
+  .zone-btn.active { background: #1a9eaa; color: #fff; }
+  .zone-btn.active::before {
+    content: "";
+    position: absolute;
+    left: -14px;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    background: #2bb5c7;
+    border-radius: 0 2px 2px 0;
+  }
+  .zone-btn-all {
+    margin-top: 8px;
+    border: 1px solid #2bb5c7;
+    color: #3dd5e8;
+  }
+  .zone-btn-all:hover:not(.active) { background: #0d2240; color: #85ccff; border-color: #3dd5e8; }
+  .zone-btn-all.active { background: #2bb5c7; border-color: #2bb5c7; color: #fff; }
 
-  .zone-nav { display: flex; gap: 4px; flex-wrap: wrap; }
-  .zone-btn { background: #0a1525; color: #5a8aaa; border: 1px solid #1a3550; padding: 6px 14px; border-radius: 3px; cursor: pointer; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.9px; transition: all 0.12s; white-space: nowrap; }
-  .zone-btn:hover:not(.active) { background: #162840; color: #a0c8e0; border-color: #2a5070; }
-  .zone-btn.active { background: #145a90; border-color: #145a90; color: #fff; }
-  .zone-separator { display: inline-block; width: 1px; height: 22px; background: #1a3550; margin: 0 8px; vertical-align: middle; }
-  .zone-btn-all { background: #0d2240; color: #1a9eff; border-color: #1a9eff; }
-  .zone-btn-all:hover:not(.active) { background: #162840; color: #4ab5ff; border-color: #4ab5ff; }
-  .zone-btn-all.active { background: #1a9eff; border-color: #1a9eff; color: #fff; }
+  /* ── MAIN WRAP ──────────────────────────────────────── */
+  .main-wrap { display: flex; flex-direction: column; min-width: 0; }
 
-  .creneau-nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .creneau-btn { background: #162840; color: #90b8d4; border: 1px solid #1e3a58; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 0.78rem; letter-spacing: 0.2px; transition: all 0.12s; }
-  .creneau-btn:hover:not(:disabled):not(.active) { background: #1e3a58; color: #fff; border-color: #2a5070; }
-  .creneau-btn.active { background: #b33050; border-color: #b33050; color: #fff; }
-  .creneau-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  /* ── PAGE HEADER ────────────────────────────────────── */
+  .page-header {
+    background: linear-gradient(180deg, #132944 0%, #0f2038 100%);
+    padding: 30px 40px 22px;
+    border-bottom: 1px solid #1e3d60;
+    position: relative;
+  }
+  .page-header::before {
+    content: "";
+    position: absolute;
+    top: 34px;
+    left: 24px;
+    width: 4px;
+    height: 44px;
+    background: linear-gradient(180deg, #2bb5c7 0%, #14a4b4 100%);
+    border-radius: 2px;
+  }
+  .page-title {
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.4px;
+    margin-bottom: 5px;
+    padding-left: 18px;
+    line-height: 1.15;
+  }
+  .page-title-sep { color: #4a6e8e; font-weight: 400; margin: 0 2px; }
+  .page-title-accent { color: #3dd5e8; font-weight: 700; }
+  .page-subtitle {
+    font-size: 0.78rem;
+    color: #7aa0b8;
+    font-weight: 400;
+    letter-spacing: 0.2px;
+    padding-left: 18px;
+    margin-bottom: 20px;
+  }
+  .date-section-label {
+    font-size: 0.64rem;
+    color: #3a5a78;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: 700;
+    padding-left: 18px;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .date-bar {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+    flex-wrap: wrap;
+    padding-left: 18px;
+  }
+  .creneau-btn {
+    background: #1a3050;
+    color: #90b8d4;
+    border: 1px solid #244263;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.12s;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    line-height: 1.2;
+    min-width: 130px;
+  }
+  .creneau-btn:hover:not(:disabled):not(.active) { background: #244263; color: #fff; border-color: #2a5070; }
+  .creneau-btn.active { background: #14a4b4; border-color: #14a4b4; color: #fff; }
+  .creneau-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .creneau-label { font-size: 0.82rem; font-weight: 700; letter-spacing: 0.2px; }
+  .creneau-date { font-size: 0.7rem; opacity: 0.85; font-weight: 500; text-transform: capitalize; }
 
-  .custom-wrap { display: flex; gap: 8px; align-items: center; padding: 5px 10px; border: 1px solid #1e3a58; border-radius: 4px; background: #0f1f32; }
+  .custom-wrap { display: flex; gap: 8px; align-items: center; padding: 5px 12px; border: 1px solid #244263; border-radius: 6px; background: #0f1f32; }
   .custom-label { font-size: 0.68rem; color: #4a6e8e; text-transform: uppercase; letter-spacing: 0.9px; }
-  .custom-date { background: #162840; border: 1px solid #1e3a58; color: #d0e4f0; font-size: 0.82rem; padding: 4px 8px; border-radius: 3px; font-family: Arial; outline: none; color-scheme: dark; }
-  .custom-date:focus { border-color: #145a90; }
+  .custom-date { background: #1a3050; border: 1px solid #244263; color: #d0e4f0; font-size: 0.82rem; padding: 5px 8px; border-radius: 3px; font-family: inherit; outline: none; color-scheme: dark; }
+  .custom-date:focus { border-color: #1a9eaa; }
   .moment-radio { display: flex; gap: 2px; }
-  .moment-btn { background: #162840; color: #7aa0b8; border: 1px solid #1e3a58; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; transition: all 0.12s; }
-  .moment-btn:hover:not(:disabled):not(.active) { background: #1e3a58; color: #fff; }
-  .moment-btn.active { background: #145a90; border-color: #145a90; color: #fff; }
+  .moment-btn { background: #1a3050; color: #7aa0b8; border: 1px solid #244263; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; transition: all 0.12s; }
+  .moment-btn:hover:not(:disabled):not(.active) { background: #244263; color: #fff; }
+  .moment-btn.active { background: #1a9eaa; border-color: #1a9eaa; color: #fff; }
   .moment-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-  main { padding: 18px 24px; max-width: 1100px; margin: 0 auto; }
+  main { padding: 22px 40px; max-width: 1100px; }
+
+  /* ── RESPONSIVE : sidebar repliée en mobile ─────────── */
+  @media (max-width: 820px) {
+    body { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid #1e3d60; }
+    .zone-nav { flex-direction: row; flex-wrap: wrap; }
+    .zone-btn { width: auto; }
+    .zone-btn.active::before { display: none; }
+    .page-header { padding: 22px 20px 18px; }
+    .page-header::before { left: 10px; }
+    .page-title { padding-left: 14px; font-size: 1.5rem; }
+    .page-subtitle, .date-section-label, .date-bar { padding-left: 14px; }
+    main { padding: 18px 20px; }
+  }
 
   .action-bar { display: flex; gap: 14px; margin-bottom: 18px; align-items: center; flex-wrap: wrap; }
-  .btn-generate { background: #b33050; color: #fff; border: none; padding: 10px 22px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; transition: background 0.12s; }
-  .btn-generate:hover:not(:disabled) { background: #972844; }
+  .btn-generate { background: #14a4b4; color: #fff; border: none; padding: 10px 22px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; transition: background 0.12s; }
+  .btn-generate:hover:not(:disabled) { background: #0e8a9a; }
   .btn-generate:disabled { opacity: 0.45; cursor: not-allowed; }
   .status-msg { font-size: 0.78rem; color: #7aa0b8; }
 
-  .error-box { background: #3a1520; border: 1px solid #b33050; border-radius: 4px; padding: 10px 14px; color: #e94560; font-size: 0.82rem; margin-bottom: 14px; white-space: pre-wrap; }
+  .error-box { background: #3a1520; border: 1px solid #c44455; border-radius: 4px; padding: 10px 14px; color: #e94560; font-size: 0.82rem; margin-bottom: 14px; white-space: pre-wrap; }
 
   .bulletins-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
-  .bulletin-card { background: #0e1c2d; border: 1px solid #1a3550; border-radius: 6px; padding: 20px 24px; }
+  .bulletin-card { background: #132944; border: 1px solid #1e3d60; border-radius: 6px; padding: 20px 24px; }
   .bulletin-card.loading-card .bulletin-text { color: #4a6e8e; font-style: italic; }
-  .bulletin-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid #1a3550; gap: 10px; flex-wrap: wrap; }
+  .bulletin-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid #1e3d60; gap: 10px; flex-wrap: wrap; }
   .bulletin-title { font-size: 0.8rem; color: #90b8d4; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
   .btn-copy { background: #1a4060; color: #fff; border: none; padding: 7px 14px; border-radius: 3px; cursor: pointer; font-size: 0.76rem; font-weight: 700; transition: background 0.12s; }
   .btn-copy:hover:not(:disabled) { background: #1e5070; }
   .btn-copy:disabled { opacity: 0.45; cursor: not-allowed; }
   .btn-copy.copied { background: #185e2c; }
   .bulletin-text { font-size: 1.02rem; line-height: 1.7; color: #d0e4f0; min-height: 80px; white-space: pre-wrap; }
-  .bulletin-placeholder { color: #4a6e8e; font-style: italic; font-size: 0.92rem; }
+  .bulletin-placeholder { color: #7aa0b8; font-size: 0.9rem; white-space: normal; display: block; text-align: left; }
 
-  .map-card { background: #0e1c2d; border: 1px solid #1a3550; border-radius: 6px; padding: 14px 20px; margin-bottom: 20px; }
+  .map-card { background: #132944; border: 1px solid #1e3d60; border-radius: 6px; padding: 14px 20px; margin-bottom: 20px; }
   .map-title { font-size: 0.7rem; color: #4a6e8e; text-transform: uppercase; letter-spacing: 0.9px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
   .map-legend { display: flex; gap: 4px; align-items: center; font-size: 0.65rem; color: #7aa0b8; text-transform: none; letter-spacing: 0; }
   .map-legend .swatch { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
-  #zoneMap { width: 100%; height: 460px; border-radius: 4px; background: #0a1525; z-index: 1; }
+  #zoneMap { width: 100%; height: 460px; border-radius: 4px; background: #0f2038; z-index: 1; }
   .temp-marker { width: 52px; height: 52px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 2px; color: #fff; font-weight: 700; font-family: Arial, sans-serif; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.45); }
   .temp-marker .wx-icon { font-size: 1.1rem; line-height: 1; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.4)); }
   .temp-marker .wx-temp { font-size: 0.86rem; line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
   /* Overrides thème sombre pour Leaflet */
-  .leaflet-popup-content-wrapper { background: #0e1c2d; color: #d0e4f0; border: 1px solid #1a3550; border-radius: 4px; }
-  .leaflet-popup-tip { background: #0e1c2d; border: 1px solid #1a3550; }
+  .leaflet-popup-content-wrapper { background: #132944; color: #d0e4f0; border: 1px solid #1e3d60; border-radius: 4px; }
+  .leaflet-popup-tip { background: #132944; border: 1px solid #1e3d60; }
   .leaflet-popup-content { font-family: Arial, sans-serif; font-size: 0.82rem; margin: 10px 14px; line-height: 1.45; }
   .leaflet-popup-content strong { color: #90b8d4; }
   .leaflet-popup-close-button { color: #7aa0b8 !important; }
-  .leaflet-bar { background: #0e1c2d !important; border: 1px solid #1a3550 !important; box-shadow: 0 2px 6px rgba(0,0,0,0.4) !important; }
-  .leaflet-bar a { background: #0e1c2d !important; color: #d0e4f0 !important; border-bottom: 1px solid #1a3550 !important; }
-  .leaflet-bar a:hover { background: #162840 !important; color: #fff !important; }
+  .leaflet-bar { background: #132944 !important; border: 1px solid #1e3d60 !important; box-shadow: 0 2px 6px rgba(0,0,0,0.4) !important; }
+  .leaflet-bar a { background: #132944 !important; color: #d0e4f0 !important; border-bottom: 1px solid #1e3d60 !important; }
+  .leaflet-bar a:hover { background: #1a3050 !important; color: #fff !important; }
   .leaflet-control-attribution { background: rgba(14, 28, 45, 0.85) !important; color: #7aa0b8 !important; font-size: 0.65rem !important; }
   .leaflet-control-attribution a { color: #90b8d4 !important; }
 
-  .data-card { background: #0e1c2d; border: 1px solid #1a3550; border-radius: 6px; padding: 14px 20px; margin-bottom: 20px; }
+  .data-card { background: #132944; border: 1px solid #1e3d60; border-radius: 6px; padding: 14px 20px; margin-bottom: 20px; }
   .data-title { font-size: 0.7rem; color: #4a6e8e; text-transform: uppercase; letter-spacing: 0.9px; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; }
   .data-title::before { content: "▸"; transition: transform 0.12s; }
   .data-title.open::before { transform: rotate(90deg); }
@@ -90,14 +251,14 @@
   .data-content.open { display: block; }
   .data-summary { margin-bottom: 10px; font-size: 0.8rem; color: #90b8d4; }
   table.data-table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
-  .data-table th { background: #0a1525; color: #3a6080; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.8px; padding: 6px 8px; text-align: left; border-bottom: 1px solid #1a3550; }
+  .data-table th { background: #0f2038; color: #3a6080; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.8px; padding: 6px 8px; text-align: left; border-bottom: 1px solid #1e3d60; }
   .data-table td { padding: 5px 8px; border-bottom: 1px solid #16253a; color: #d0e4f0; }
   .data-table tr:hover td { background: #162e48; }
   .data-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
   .footer-actions { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-  .btn-reset-memory { background: transparent; color: #7aa0b8; border: 1px solid #1e3a58; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.3px; transition: all 0.12s; }
-  .btn-reset-memory:hover { background: #162840; color: #e94560; border-color: #b33050; }
+  .btn-reset-memory { background: transparent; color: #7aa0b8; border: 1px solid #244263; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.3px; transition: all 0.12s; }
+  .btn-reset-memory:hover { background: #1a3050; color: #3dd5e8; border-color: #14a4b4; }
   .btn-reset-memory.done { background: #185e2c; border-color: #185e2c; color: #fff; }
   .memory-hint { font-size: 0.68rem; color: #4a6e8e; font-style: italic; }
   .footer-note { font-size: 0.7rem; color: #4a6e8e; text-align: center; padding: 4px 0 24px; letter-spacing: 0.3px; }
@@ -108,85 +269,113 @@
 </head>
 <body>
 
-<header>
-  <div class="header-top">
-    <div class="zone-nav" id="zoneNav">
-      <button class="zone-btn" data-zone="reseau">Réseau</button>
-      <button class="zone-btn" data-zone="mel">Métropole Lilloise</button>
-      <button class="zone-btn" data-zone="nord">Nord</button>
-      <button class="zone-btn" data-zone="pdc">Pas-de-Calais</button>
-      <button class="zone-btn" data-zone="picardie">Picardie</button>
-      <button class="zone-btn" data-zone="marne">Marne</button>
-      <span class="zone-separator" aria-hidden="true"></span>
-      <button class="zone-btn zone-btn-all" data-zone="all">Toutes les zones</button>
-    </div>
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <img id="sidebarLogo" class="sidebar-logo" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+    <span class="sidebar-logo-fallback" style="display:none;">Andrea <strong>Média</strong></span>
   </div>
-  <div class="header-bot">
-    <div class="creneau-nav">
-      <button class="creneau-btn" disabled title="Prochainement">Cet après-midi</button>
-      <button class="creneau-btn" disabled title="Prochainement">Demain matin</button>
-      <button class="creneau-btn" disabled title="Prochainement">Demain après-midi</button>
+  <span class="sidebar-label">Zones</span>
+  <nav class="zone-nav" id="zoneNav">
+    <button class="zone-btn" data-zone="reseau">Réseau</button>
+    <button class="zone-btn" data-zone="mel">Métropole Lilloise</button>
+    <button class="zone-btn" data-zone="nord">Nord</button>
+    <button class="zone-btn" data-zone="pdc">Pas-de-Calais</button>
+    <button class="zone-btn" data-zone="picardie">Picardie</button>
+    <button class="zone-btn" data-zone="marne">Marne</button>
+    <button class="zone-btn zone-btn-all" data-zone="all">Toutes les zones</button>
+  </nav>
+</aside>
+
+<div class="main-wrap">
+
+  <header class="page-header">
+    <h1 class="page-title">Contenu local <span class="page-title-sep">:</span> <span class="page-title-accent">Météo</span></h1>
+    <p class="page-subtitle">Texte rédigé par IA — Source Météo France AROME HD</p>
+    <span class="date-section-label">Créneau</span>
+    <div class="date-bar">
+      <button class="creneau-btn active" data-creneau="today-journee">
+        <span class="creneau-label">Aujourd'hui</span>
+        <span class="creneau-date" id="dateToday">—</span>
+      </button>
+      <button class="creneau-btn" data-creneau="today-matin">
+        <span class="creneau-label">Ce matin</span>
+        <span class="creneau-date" id="dateTodayMatin">—</span>
+      </button>
+      <button class="creneau-btn" data-creneau="today-aprem">
+        <span class="creneau-label">Cet après-midi</span>
+        <span class="creneau-date" id="dateTodayAprem">—</span>
+      </button>
+      <button class="creneau-btn" data-creneau="tomorrow-matin">
+        <span class="creneau-label">Demain matin</span>
+        <span class="creneau-date" id="dateTomorrowMatin">—</span>
+      </button>
       <div class="custom-wrap">
         <span class="custom-label">ou date :</span>
         <input type="date" id="customDate" class="custom-date" />
         <div class="moment-radio">
-          <button class="moment-btn" data-moment="matin" disabled title="Prochainement">Matin</button>
-          <button class="moment-btn" data-moment="aprem" disabled title="Prochainement">Après-midi</button>
-          <button class="moment-btn active" data-moment="journee">Journée</button>
+          <button class="moment-btn" data-moment="matin">Matin</button>
+          <button class="moment-btn" data-moment="aprem">Après-midi</button>
+          <button class="moment-btn" data-moment="journee">Journée</button>
         </div>
       </div>
     </div>
-  </div>
-  <h1 id="headerTitle">Contenu local — Météo</h1>
-</header>
+  </header>
 
-<main>
-  <div class="action-bar">
-    <button id="generateBtn" class="btn-generate" disabled>Générer le bulletin</button>
-    <span id="statusMsg" class="status-msg"></span>
-  </div>
+  <main>
+    <div class="action-bar">
+      <button id="generateBtn" class="btn-generate" disabled>Générer le bulletin</button>
+      <span id="statusMsg" class="status-msg"></span>
+    </div>
 
-  <div id="errorBox"></div>
+    <div id="errorBox"></div>
 
-  <div id="bulletinsList" class="bulletins-list">
-    <div class="bulletin-card">
-      <div class="bulletin-text">
-        <span class="bulletin-placeholder">Sélectionne une zone puis clique sur "Générer le bulletin". Mode actif aujourd'hui : <strong>Journée</strong> (matin + après-midi).</span>
+    <div id="bulletinsList" class="bulletins-list">
+      <div class="bulletin-card"><div class="bulletin-text"><span class="bulletin-placeholder">Sélectionne une zone dans le menu de gauche et un créneau en haut, puis clique sur « Générer le bulletin ».</span></div></div>
+    </div>
+
+    <div class="map-card">
+      <div class="map-title">
+        <span>Carte météo de la zone</span>
+        <span class="map-legend">
+          <span class="swatch" style="background:#2563eb;"></span>5°
+          <span class="swatch" style="background:#10b981;"></span>12°
+          <span class="swatch" style="background:#eab308;"></span>20°
+          <span class="swatch" style="background:#f97316;"></span>26°
+          <span class="swatch" style="background:#dc2626;"></span>32°
+        </span>
       </div>
+      <div id="zoneMap"></div>
     </div>
-  </div>
 
-  <div class="map-card">
-    <div class="map-title">
-      <span>Carte météo de la zone</span>
-      <span class="map-legend">
-        <span class="swatch" style="background:#2563eb;"></span>5°
-        <span class="swatch" style="background:#10b981;"></span>12°
-        <span class="swatch" style="background:#eab308;"></span>20°
-        <span class="swatch" style="background:#f97316;"></span>26°
-        <span class="swatch" style="background:#dc2626;"></span>32°
-      </span>
+    <div class="data-card">
+      <div class="data-title" id="dataToggle">Données météo détaillées (source Météo France — AROME HD via Open-Meteo)</div>
+      <div class="data-content" id="dataContent"><em style="color:#4a6e8e;">Générez un bulletin pour afficher les données.</em></div>
     </div>
-    <div id="zoneMap"></div>
-  </div>
 
-  <div class="data-card">
-    <div class="data-title" id="dataToggle">Données météo détaillées (source Météo France — AROME HD via Open-Meteo)</div>
-    <div class="data-content" id="dataContent"><em style="color:#4a6e8e;">Générez un bulletin pour afficher les données.</em></div>
-  </div>
+    <div class="footer-actions">
+      <button id="resetMemoryBtn" class="btn-reset-memory" title="Efface l'historique des bulletins générés (stocké dans ton navigateur uniquement)">↻ Réinitialiser la mémoire de style</button>
+      <span class="memory-hint">Les 5 derniers bulletins par zone sont mémorisés pour éviter la répétition de tournures.</span>
+    </div>
+    <div class="footer-note">Andrea Media — Module « Contenu local » · Sous-module Météo · Démo</div>
+  </main>
 
-  <div class="footer-actions">
-    <button id="resetMemoryBtn" class="btn-reset-memory" title="Efface l'historique des bulletins générés (stocké dans ton navigateur uniquement)">↻ Réinitialiser la mémoire de style</button>
-    <span class="memory-hint">Les 5 derniers bulletins par zone sont mémorisés pour éviter la répétition de tournures.</span>
-  </div>
-  <div class="footer-note">Andrea Media — Module « Contenu local » · Sous-module Météo · Démo</div>
-</main>
+</div>
 
 <script>
 /* =========================================================
    CONFIG
    ========================================================= */
 const PROXY_URL = 'https://andrea-meteo-proxy.johann-antigny.workers.dev/';
+
+/* Identité du tenant affichée dans la sidebar.
+   Pour une radio cliente, on change UNIQUEMENT cet objet (ou plus tard : valeur lue depuis Supabase). */
+const TENANT = {
+  id: 'andrea-media',
+  name: 'Andrea Média',
+  logoWhite: 'assets/logos/andrea-media/andrea_media_white_transparent.png',
+  logoColor: 'assets/logos/andrea-media/andrea_media_Color_transparent.png',
+  logoBlack: 'assets/logos/andrea-media/andrea_media_black_transparent.png'
+};
 
 /* Liste des villes (nom, latitude, longitude) par zone. */
 const ZONES = {
@@ -488,7 +677,21 @@ RÈGLES DE RÉDACTION (à respecter strictement) :
 
 2. TON PARLÉ — style oral radio, pas de publication écrite. Tu t'adresses à un auditeur, pas à un lecteur.
    INTERDIT (expressions écrites à bannir) : « sans phénomène notable à signaler », « tandis que », « tandis que d'autres villes », « par ailleurs », « on notera que », « il est à noter », « en effet », « d'autre part », « quant à », « force est de constater ».
-   PRÉFÉRÉ (tournures orales) : « du soleil partout », « des nuages par moments », « un temps changeant », « rien côté pluie », « à surveiller », « prudence », « ambiance agréable », « belle journée en perspective », « un ciel un peu plus chargé ».
+   INTERDIT (contradictions / pléonasmes) : NE JAMAIS combiner un adverbe de dominance avec un adjectif déjà nuancé. Exemples à proscrire absolument :
+     — « majoritairement partiellement nuageux » ❌ (contradictoire)
+     — « globalement partiellement nuageux » ❌
+     — « en général partiellement couvert » ❌
+     — « principalement partagé » ❌
+     — « plutôt mitigé » suivi d'un autre adverbe ❌
+   Règle : si le ciel est partiellement nuageux OU partagé, dire directement « un ciel partagé », « soleil et nuages », « ciel mélangé » — sans adverbe de dominance devant.
+   INTERDIT (verbes de remplissage devant les températures) : NE JAMAIS ouvrir une annonce de températures (matin ou après-midi) avec un verbe qui n'apporte aucune information. Exemples à proscrire :
+     — « on aura jusqu'à 21° à… » ❌
+     — « on attend jusqu'à 21° à… » ❌
+     — « on atteindra 21° à… » ❌
+     — « les thermomètres grimperont jusqu'à… » ❌
+     — « on ira jusqu'à 21°… » ❌
+   Règle : ATTAQUER DIRECTEMENT avec la température et la ville : « Côté températures, 21° à Lille et Amiens, 22° à… ». Une phrase de contexte ambiance AVANT le chiffre est autorisée UNIQUEMENT si elle apporte de l'info (ex : « on démarre la journée au frais, 9° à… » — ici « au frais » informe).
+   PRÉFÉRÉ (tournures orales) : « du soleil partout », « des nuages par moments », « un temps changeant », « rien côté pluie », « à surveiller », « prudence », « ambiance agréable », « belle journée en perspective », « un ciel un peu plus chargé », « un maximum de 23° à… » (pour le palier haut, plus net que « localement 23° »).
 
 3. Termes météo : factuels et populaires — soleil, nuages, couvert, pluie, averses, brouillard, orage, vent. Pas de jargon technique, pas de termes littéraires.
 
@@ -498,6 +701,7 @@ RÈGLES DE RÉDACTION (à respecter strictement) :
    - Zones départementales / régionales (Métropole Lilloise, Nord, Pas-de-Calais, Picardie, Marne) : EXACTEMENT 2 paliers de température adjacents (T et T+1°), 2 villes par palier → 4 villes citées au total.
    - Zone « Réseau » (spéciale) : EXACTEMENT 3 paliers de température adjacents (T, T+1°, T+2°), 2 villes par palier → 6 villes citées au total (1 par sous-zone).
    - TOUJOURS énoncer du plus bas au plus haut. Ex : « jusqu'à 21° à V1 et V2, 22° à V3 et V4 » (et pour Réseau « et localement 23° à V5 et V6 »).
+   - NOMBRE DE VILLES = MAXIMUM NON NÉGOCIABLE. 2 villes par palier, jamais 3. Si la longueur cible n'est pas atteinte, NE PAS ajouter de villes — étoffer à la place l'intro, la synthèse du temps, ou la phrase de liaison avant les températures.
 
 6. SPREAD GÉOGRAPHIQUE — OBLIGATOIRE :
    - Les villes citées doivent COUVRIR le département / la région, pas être concentrées autour d'un même pôle urbain.
@@ -519,7 +723,7 @@ RÈGLES DE RÉDACTION (à respecter strictement) :
 
 10. Zone imposée : tu cites EXCLUSIVEMENT des villes de la liste "Détail par ville" fournie. N'invente pas de ville.
 
-11. Longueur cible : 40 à 70 mots pour les zones départementales, 60 à 90 mots pour le Réseau.
+11. Longueur cible : 70 à 90 mots pour TOUTES les zones (départementales, régionales et Réseau). Si tu es en-dessous de 70 mots, enrichis l'introduction et la synthèse du temps — NE JAMAIS combler en ajoutant des villes supplémentaires (cf. règle 5).
 
 12. Sortie : texte brut uniquement, prêt à être lu à l'antenne. Pas de titre, pas de guillemets, pas d'emoji, pas de retour à la ligne multiple, pas de points-virgules.
 
@@ -527,11 +731,148 @@ RÈGLES DE RÉDACTION (à respecter strictement) :
 `.trim();
 
 /* =========================================================
+   DIRECTIVES STRUCTURE PAR SLOT TEMPOREL
+   Chaque slot a sa propre structure qui complète (et affine) les règles ci-dessus.
+   ========================================================= */
+const SLOT_DIRECTIVES = {
+  'today-journee': `STRUCTURE — SLOT « AUJOURD'HUI / JOURNÉE COMPLÈTE » :
+Bulletin complet matin + après-midi.
+- Matin : FOURCHETTE globale « entre X et Y degrés ce matin » (aucune ville citée en matin).
+- Après-midi : FORMAT DÉTAILLÉ — 2 paliers × 2 villes (zones dept/régionales) OU 3 paliers × 2 villes (Réseau), cf. règle 5.
+- Pas de mention du lendemain.`,
+
+  'today-matin': `STRUCTURE — SLOT « CE MATIN / FOCUS MATIN » :
+Tu es DANS la matinée. Tu parles du matin en cours (présent) + tu annonces l'après-midi à venir (futur).
+- Ouverture : « Ce matin, … »
+- Conditions ciel matin au présent pour l'état courant (ex : « le soleil est bien présent »).
+- Températures matin DÉTAILLÉES : format identique à l'après-midi du slot Journée → 2 paliers × 2 villes (dept) OU 3 paliers × 2 villes (Réseau). Attaquer directement après une brève intro ambiance. Ex : « Côté températures, on démarre la journée au frais, 9° à V1 et V2, 10° à V3 et V4 ».
+- Phrase finale : liaison vers l'après-midi avec UNE SEULE température globale (pas de villes citées pour l'après-midi). Ex : « Le temps sec se maintiendra toute la matinée pour se réchauffer nettement dans l'après-midi jusqu'à 22 degrés sur [zone] ».
+- Pas de mention du lendemain. Pas de fourchette matin type « entre X et Y degrés » : le format détaillé paliers × villes remplace la fourchette pour ce slot.`,
+
+  'today-aprem': `STRUCTURE — SLOT « CET APRÈS-MIDI / FOCUS APRÈS-MIDI » :
+Tu parles de l'après-midi et de la soirée à venir. Pas du matin déjà passé, pas du lendemain.
+- Ouverture : « Cet après-midi, » + conditions ciel au futur (ex : « le soleil s'installera pleinement »).
+- Températures après-midi DÉTAILLÉES : 2 paliers × 2 villes (dept) OU 3 paliers × 2 villes (Réseau). Attaquer directement. Ex : « Côté températures, 21° à V1 et V2, 22° à V3 et V4, et un maximum de 23° à V5 et V6 ».
+- Phrase finale : liaison vers la soirée avec UNE SEULE température globale (pas de villes). Ex : « Une douceur qui se prolongera jusqu'en fin de journée avant de laisser place à une soirée encore agréable, avec des températures autour de 18 degrés sur [zone] ».`,
+
+  'tomorrow-matin': `STRUCTURE — SLOT « DEMAIN MATIN / FOCUS MATIN DU LENDEMAIN » :
+Tu es aujourd'hui, tu parles du matin de demain. Verbes au FUTUR.
+- Ouverture : « Demain matin, … »
+- Conditions ciel matin au futur (ex : « le soleil sera bien présent »).
+- Températures matin DÉTAILLÉES : format identique à « Ce matin » → 2 paliers × 2 villes (dept) OU 3 paliers × 2 villes (Réseau). Attaquer directement après une brève intro ambiance.
+- Phrase finale : liaison vers l'après-midi avec UNE SEULE température globale (pas de villes).`,
+
+  'custom-matin': `STRUCTURE — SLOT « MATIN POUR UNE DATE CUSTOM » :
+Tu rédiges un bulletin matin pour un jour spécifique (la date exacte est dans les données météo ci-dessous).
+- Ouverture : ADAPTE au jour réel :
+  • si la date correspond à aujourd'hui → « Ce matin, … »
+  • si la date correspond à demain → « Demain matin, … »
+  • sinon → « [Jour de la semaine en français] matin, … » (ex : « Samedi matin, », « Lundi matin, »).
+- Verbes au FUTUR si la date est postérieure à aujourd'hui, présent si c'est aujourd'hui.
+- Structure interne : identique à « Ce matin » / « Demain matin » → températures matin détaillées (2/3 paliers × 2 villes) + phrase finale avec température unique globale pour l'après-midi.`,
+
+  'custom-aprem': `STRUCTURE — SLOT « APRÈS-MIDI POUR UNE DATE CUSTOM » :
+Tu rédiges un bulletin après-midi pour un jour spécifique (la date exacte est dans les données météo ci-dessous).
+- Ouverture : ADAPTE au jour réel :
+  • si la date correspond à aujourd'hui → « Cet après-midi, … »
+  • si la date correspond à demain → « Demain après-midi, … »
+  • sinon → « [Jour de la semaine en français] après-midi, … ».
+- Verbes au FUTUR.
+- Structure interne : identique à « Cet après-midi » → températures après-midi détaillées (2/3 paliers × 2 villes) + phrase finale avec température unique globale pour la soirée.`,
+
+  'custom-journee': `STRUCTURE — SLOT « JOURNÉE COMPLÈTE POUR UNE DATE CUSTOM » :
+Tu rédiges un bulletin pour un jour spécifique (la date est dans les données météo).
+- Ouverture : ADAPTE au jour réel :
+  • si c'est aujourd'hui → « Aujourd'hui, … » ou mention du jour semaine (« Ce mardi, … »)
+  • si c'est demain → « Demain, … »
+  • sinon → « [Jour de la semaine en français], … » (ex : « Vendredi, … »).
+- Verbes au FUTUR si postérieur.
+- Structure interne : identique à « Aujourd'hui / Journée complète » → fourchette matin globale + après-midi détaillé (2/3 paliers × 2 villes).`
+};
+
+/* =========================================================
+   EXEMPLES DE STYLE PAR SLOT
+   Each slot = 6 exemples (1 par zone). Source : Prompts/exemples-slots-temporels.md.
+   ========================================================= */
+const STYLE_EXAMPLES_TODAY_JOURNEE = STYLE_EXAMPLES;
+
+const STYLE_EXAMPLES_TODAY_MATIN = `
+Exemple 1 — RÉSEAU
+« Ce matin, le beau temps s'installe sur l'ensemble de la région. Le soleil est bien présent dès le lever du jour dans un ciel globalement dégagé, pour une matinée lumineuse et agréable. Côté températures, on démarre la journée au frais, 9° à Lille et Amiens, 10° à Calais et Valenciennes, et 11° à Reims et Charleville-Mézières. Le temps sec se maintiendra toute la matinée pour se réchauffer nettement dans l'après-midi jusqu'à 22 degrés sur l'ensemble de la région. »
+
+Exemple 2 — MÉTROPOLE LILLOISE
+« Ce matin, le beau temps s'installe sur la métropole lilloise. Le soleil est bien présent dès le lever du jour dans un ciel globalement dégagé, pour une matinée lumineuse et agréable. Côté températures, on démarre la journée au frais, 9° à Lille et Armentières, et 10° à Seclin et Villeneuve-d'Ascq. Le temps sec se maintiendra toute la matinée pour se réchauffer nettement dans l'après-midi jusqu'à 22 degrés sur la métropole. »
+
+Exemple 3 — NORD
+« Ce matin, le beau temps s'installe sur le Nord. Le soleil est bien présent dès le lever du jour dans un ciel globalement dégagé, pour une matinée lumineuse et agréable. Côté températures, on démarre la journée au frais, 9° à Dunkerque et Hazebrouck, et 10° à Maubeuge et Valenciennes. Le temps sec se maintiendra toute la matinée pour se réchauffer nettement dans l'après-midi jusqu'à 22 degrés sur le département. »
+
+Exemple 4 — PAS-DE-CALAIS
+« Ce matin, le beau temps s'installe sur le Pas-de-Calais. Le soleil est bien présent dès le lever du jour dans un ciel globalement dégagé, pour une matinée lumineuse et agréable. Côté températures, on démarre la journée au frais, 9° à Calais et Arras, et 10° à Boulogne et Lens. Le temps sec se maintiendra toute la matinée pour se réchauffer nettement dans l'après-midi jusqu'à 22 degrés sur le département. »
+
+Exemple 5 — PICARDIE
+« Ce matin, le beau temps s'installe sur la Picardie. Le soleil est bien présent dès le lever du jour dans un ciel globalement dégagé, pour une matinée lumineuse et agréable. Côté températures, on démarre la journée au frais, 9° à Amiens et Beauvais, et 10° à Saint-Quentin et Compiègne. Le temps sec se maintiendra toute la matinée pour se réchauffer nettement dans l'après-midi jusqu'à 22 degrés sur la région. »
+
+Exemple 6 — MARNE
+« Ce matin, le beau temps s'installe sur la Marne. Le soleil est bien présent dès le lever du jour dans un ciel globalement dégagé, pour une matinée lumineuse et agréable. Côté températures, on démarre la journée au frais, 9° à Reims et Châlons-en-Champagne, et 10° à Épernay et Vitry-le-François. Le temps sec se maintiendra toute la matinée pour se réchauffer nettement dans l'après-midi jusqu'à 22 degrés sur le département. »
+`.trim();
+
+const STYLE_EXAMPLES_TODAY_APREM = `
+Exemple 1 — RÉSEAU
+« Cet après-midi, le soleil s'installera pleinement sur l'ensemble de la région dans un ciel largement dégagé, pour un après-midi lumineux et doux. Côté températures, 21° à Lille et Amiens, 22° à Calais et Valenciennes, et un maximum de 23° à Reims et Charleville-Mézières. Une douceur qui se prolongera jusqu'en fin de journée avant de laisser place à une soirée encore agréable, avec des températures autour de 18 degrés sur l'ensemble de la région. »
+
+Exemple 2 — MÉTROPOLE LILLOISE
+« Cet après-midi, le soleil s'installera pleinement sur la métropole lilloise dans un ciel largement dégagé, pour un après-midi particulièrement lumineux et agréable. Côté températures, 21° à Lille et Armentières, et un maximum de 22° à Seclin et Villeneuve-d'Ascq. Une douceur qui se prolongera jusqu'en fin de journée avant de laisser place à une soirée encore clémente, avec des températures qui resteront autour de 18 degrés sur l'ensemble de la métropole. »
+
+Exemple 3 — NORD
+« Cet après-midi, le soleil s'installera pleinement sur le Nord dans un ciel largement dégagé, pour un après-midi particulièrement lumineux et agréable. Côté températures, 21° à Dunkerque et Hazebrouck, et un maximum de 22° à Maubeuge et Valenciennes. Une douceur qui se prolongera jusqu'en fin de journée avant de laisser place à une soirée encore clémente, avec des températures qui resteront autour de 18 degrés sur l'ensemble du département, du littoral à l'Avesnois. »
+
+Exemple 4 — PAS-DE-CALAIS
+« Cet après-midi, le soleil s'installera pleinement sur le Pas-de-Calais dans un ciel largement dégagé, pour un après-midi lumineux et particulièrement agréable. Côté températures, 21° à Calais et Arras, et un maximum de 22° à Boulogne et Lens. Une douceur qui se prolongera jusqu'en fin de journée avant de laisser place à une soirée encore clémente, avec des températures qui resteront autour de 18 degrés sur l'ensemble du département, de la côte à l'intérieur des terres. »
+
+Exemple 5 — PICARDIE
+« Cet après-midi, le soleil s'installera pleinement sur la Picardie dans un ciel largement dégagé, pour un après-midi lumineux et particulièrement agréable. Côté températures, 21° à Amiens et Beauvais, et un maximum de 22° à Saint-Quentin et Compiègne. Une douceur qui se prolongera jusqu'en fin de journée avant de laisser place à une soirée encore clémente, avec des températures qui resteront autour de 18 degrés sur l'ensemble de la région, de la Somme à l'Aisne. »
+
+Exemple 6 — MARNE
+« Cet après-midi, le soleil s'installera pleinement sur la Marne dans un ciel largement dégagé, pour un après-midi lumineux et particulièrement agréable. Côté températures, 21° à Reims et Châlons-en-Champagne, et un maximum de 22° à Épernay et Vitry-le-François. Une douceur qui se prolongera jusqu'en fin de journée avant de laisser place à une soirée encore clémente, avec des températures qui resteront autour de 18 degrés sur l'ensemble du département. »
+`.trim();
+
+const STYLE_EXAMPLES_TOMORROW_MATIN = `
+Exemple 1 — RÉSEAU
+« Demain matin, le beau temps s'installe sur l'ensemble de la région. Le soleil sera bien présent dès le lever du jour dans un ciel globalement dégagé, pour une matinée lumineuse et agréable. Côté températures, on démarre la journée au frais, 9° à Lille et Amiens, 10° à Calais et Valenciennes, et 11° à Reims et Charleville-Mézières. Le temps sec se maintiendra toute la matinée pour se réchauffer nettement dans l'après-midi jusqu'à 22 degrés sur l'ensemble de la région. »
+
+Exemple 2 — MÉTROPOLE LILLOISE
+« Demain matin, le beau temps s'installe sur la métropole lilloise. Le soleil sera bien présent dès le lever du jour dans un ciel globalement dégagé, pour une matinée lumineuse et agréable. Côté températures, on démarre la journée au frais, 9° à Lille et Armentières, et 10° à Seclin et Villeneuve-d'Ascq. Le temps sec se maintiendra toute la matinée pour se réchauffer nettement dans l'après-midi jusqu'à 22 degrés sur la métropole. »
+
+Exemple 3 — NORD
+« Demain matin, le beau temps s'installe sur le Nord. Le soleil sera bien présent dès le lever du jour dans un ciel globalement dégagé, pour une matinée lumineuse et agréable. Côté températures, on démarre la journée au frais, 9° à Dunkerque et Hazebrouck, et 10° à Maubeuge et Valenciennes. Le temps sec se maintiendra toute la matinée pour se réchauffer nettement dans l'après-midi jusqu'à 22 degrés sur le département. »
+
+Exemple 4 — PAS-DE-CALAIS
+« Demain matin, le beau temps s'installe sur le Pas-de-Calais. Le soleil sera bien présent dès le lever du jour dans un ciel globalement dégagé, pour une matinée lumineuse et agréable. Côté températures, on démarre la journée au frais, 9° à Calais et Arras, et 10° à Boulogne et Lens. Le temps sec se maintiendra toute la matinée pour se réchauffer nettement dans l'après-midi jusqu'à 22 degrés sur le département. »
+
+Exemple 5 — PICARDIE
+« Demain matin, le beau temps s'installe sur la Picardie. Le soleil sera bien présent dès le lever du jour dans un ciel globalement dégagé, pour une matinée lumineuse et agréable. Côté températures, on démarre la journée au frais, 9° à Amiens et Beauvais, et 10° à Saint-Quentin et Compiègne. Le temps sec se maintiendra toute la matinée pour se réchauffer nettement dans l'après-midi jusqu'à 22 degrés sur la région. »
+
+Exemple 6 — MARNE
+« Demain matin, le beau temps s'installe sur la Marne. Le soleil sera bien présent dès le lever du jour dans un ciel globalement dégagé, pour une matinée lumineuse et agréable. Côté températures, on démarre la journée au frais, 9° à Reims et Châlons-en-Champagne, et 10° à Épernay et Vitry-le-François. Le temps sec se maintiendra toute la matinée pour se réchauffer nettement dans l'après-midi jusqu'à 22 degrés sur le département. »
+`.trim();
+
+const STYLE_EXAMPLES_BY_SLOT = {
+  'today-journee': STYLE_EXAMPLES_TODAY_JOURNEE,
+  'today-matin': STYLE_EXAMPLES_TODAY_MATIN,
+  'today-aprem': STYLE_EXAMPLES_TODAY_APREM,
+  'tomorrow-matin': STYLE_EXAMPLES_TOMORROW_MATIN,
+  // Les slots custom réutilisent les mêmes exemples de style — la directive slot dit à l'IA d'adapter l'ouverture au jour réel.
+  'custom-matin': STYLE_EXAMPLES_TOMORROW_MATIN,
+  'custom-aprem': STYLE_EXAMPLES_TODAY_APREM,
+  'custom-journee': STYLE_EXAMPLES_TODAY_JOURNEE
+};
+
+/* =========================================================
    STATE
    ========================================================= */
 const state = {
   zone: null,
-  moment: 'journee',
+  slot: 'today-journee',
   date: null
 };
 
@@ -578,11 +919,21 @@ ${recent.map((e, i) => `— Précédent n°${i + 1} (${e.date}) —\n${e.text}`)
    INIT
    ========================================================= */
 function initApp() {
+  // Applique l'identité du tenant (logo sidebar). Cache-bust avec ?v=timestamp du build.
+  const logoEl = document.getElementById('sidebarLogo');
+  if (logoEl) {
+    logoEl.src = TENANT.logoWhite + '?v=' + Date.now();
+    logoEl.alt = TENANT.name;
+  }
+
   const today = new Date();
   const yyyy = today.getFullYear();
   const mm = String(today.getMonth() + 1).padStart(2, '0');
   const dd = String(today.getDate()).padStart(2, '0');
   const todayStr = `${yyyy}-${mm}-${dd}`;
+
+  const tomorrow = new Date(today.getTime() + 24 * 3600 * 1000);
+  const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
 
   const maxDate = new Date(today.getTime() + 14 * 24 * 3600 * 1000);
   const mxY = maxDate.getFullYear();
@@ -595,6 +946,40 @@ function initApp() {
   dateInput.max = `${mxY}-${mxM}-${mxD}`;
   state.date = todayStr;
 
+  // Remplit les labels de date dans les boutons créneaux (aujourd'hui / demain)
+  const shortDateFR = (d) => d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long' });
+  const todayLabel = shortDateFR(today);
+  const tomorrowLabel = shortDateFR(tomorrow);
+  const setTxt = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
+  setTxt('dateToday', todayLabel);
+  setTxt('dateTodayMatin', todayLabel);
+  setTxt('dateTodayAprem', todayLabel);
+  setTxt('dateTomorrowMatin', tomorrowLabel);
+
+  // Click handler sur les boutons créneau (quick) — met à jour state.slot et state.date
+  document.querySelectorAll('.creneau-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.creneau-btn, .moment-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.slot = btn.dataset.creneau;
+      const useTomorrow = state.slot.startsWith('tomorrow-');
+      state.date = useTomorrow ? tomorrowStr : todayStr;
+      dateInput.value = state.date;
+      updateUI();
+    });
+  });
+
+  // Click handler sur les boutons moment (custom date) — engage le mode custom
+  document.querySelectorAll('.moment-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.creneau-btn, .moment-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.slot = 'custom-' + btn.dataset.moment;
+      state.date = dateInput.value;
+      updateUI();
+    });
+  });
+
   document.querySelectorAll('.zone-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.zone-btn').forEach(b => b.classList.remove('active'));
@@ -606,6 +991,18 @@ function initApp() {
 
   dateInput.addEventListener('change', (e) => {
     state.date = e.target.value;
+    // Si on était sur un bouton rapide et que la date ne matche plus → bascule en mode custom (Journée par défaut)
+    const activeCreneau = document.querySelector('.creneau-btn.active');
+    if (activeCreneau) {
+      const slot = activeCreneau.dataset.creneau;
+      const expected = slot.startsWith('tomorrow-') ? tomorrowStr : todayStr;
+      if (state.date !== expected) {
+        document.querySelectorAll('.creneau-btn, .moment-btn').forEach(b => b.classList.remove('active'));
+        const journeeBtn = document.querySelector('.moment-btn[data-moment="journee"]');
+        if (journeeBtn) journeeBtn.classList.add('active');
+        state.slot = 'custom-journee';
+      }
+    }
     updateUI();
   });
 
@@ -723,7 +1120,12 @@ function modeOf(arr) {
 /* =========================================================
    PROMPT BUILDER
    ========================================================= */
-function buildPrompt(zone, perCity, dateStr) {
+function buildPrompt(zone, perCity, dateStr, slot) {
+  slot = slot || 'today-journee';
+  const slotDirective = SLOT_DIRECTIVES[slot] || SLOT_DIRECTIVES['today-journee'];
+  const slotExamples = STYLE_EXAMPLES_BY_SLOT[slot] || STYLE_EXAMPLES_BY_SLOT['today-journee'];
+  const isMorningFocus = (slot === 'today-matin' || slot === 'tomorrow-matin');
+
   const zoneLabel = ZONES[zone].label;
   const dateLabel = formatDateFR(dateStr);
 
@@ -732,6 +1134,13 @@ function buildPrompt(zone, perCity, dateStr) {
   const zoneMorningMin = Math.min(...perCity.map(c => c.morning_ref));
   const zoneMorningMax = Math.max(...perCity.map(c => c.morning_ref));
   const total = perCity.length;
+
+  // Distribution des températures MATIN (morning_ref par ville) — utile quand on a un format détaillé matin (paliers × villes)
+  const morningTempCounts = {};
+  perCity.forEach(c => { morningTempCounts[c.morning_ref] = (morningTempCounts[c.morning_ref] || 0) + 1; });
+  const morningTempDist = Object.keys(morningTempCounts).map(Number).sort((a, b) => a - b)
+    .map(t => `  • ${t}° : ${morningTempCounts[t]} ville${morningTempCounts[t] > 1 ? 's' : ''}`)
+    .join('\n');
 
   // Distribution du temps par ville (code dominant par ville) — l'IA synthétisera
   function distBy(field) {
@@ -792,12 +1201,23 @@ function buildPrompt(zone, perCity, dateStr) {
 
   const historySection = formatHistorySection(getRecentHistory(zone));
 
+  const palierCountLabel = zone === 'reseau' ? '3 paliers adjacents (T, T+1°, T+2°)' : '2 paliers adjacents (T et T+1°)';
+  const villesDistrLabel = zone === 'reseau' ? '2 villes par palier (6 au total, 1 par sous-zone)' : '2 villes par palier (4 au total, géographiquement réparties)';
+
+  const tempDirective = isMorningFocus
+    ? `→ Choisis ${palierCountLabel} sur les températures MATIN (distribution ci-dessus) pour construire le cœur détaillé du bulletin. Extrapole à ±1° si nécessaire pour créer des paliers adjacents. Attribue ${villesDistrLabel}. La température après-midi pour la phrase finale sera UNE SEULE valeur globale (ex : la plus haute observée, ou la moyenne arrondie).`
+    : (slot === 'today-aprem'
+      ? `→ Choisis ${palierCountLabel} sur les températures APRÈS-MIDI (distribution ci-dessus). Extrapole à ±1° si concentration sur une seule valeur. Attribue ${villesDistrLabel}. La température soirée pour la phrase finale sera UNE SEULE valeur globale (approximativement la température après-midi moins 3 à 4 degrés).`
+      : `→ Choisis ${palierCountLabel} sur les températures APRÈS-MIDI (distribution ci-dessus). Extrapole à ±1° si concentration sur une seule valeur. Attribue ${villesDistrLabel}.`);
+
   return `Tu es rédacteur de bulletins météo pour une radio locale (Andrea Media). Rédige un bulletin prêt à lire à l'antenne.
+
+${slotDirective}
 
 ${RULES}
 
-EXEMPLES DE STYLE (structure et ton à imiter — ne pas recopier le contenu) :
-${STYLE_EXAMPLES}
+EXEMPLES DE STYLE pour le slot actuel (structure et ton à imiter — NE PAS recopier le contenu, utiliser les données météo réelles) :
+${slotExamples}
 ${historySection ? '\n' + historySection + '\n' : ''}
 DONNÉES MÉTÉO À UTILISER (source : Météo France — modèle AROME HD, journée du ${dateLabel}) :
 
@@ -813,15 +1233,18 @@ ${afternoonDist}
 
 → À toi de SYNTHÉTISER : regarde les pourcentages. Si un type de temps représente >60%, c'est dominant. Entre 30% et 60%, c'est un mix à décrire ("soleil avec passages nuageux", "ciel mélangé"…). En-dessous de 30%, c'est minoritaire — à ignorer sauf si c'est grave (orage, neige, brouillard dense).
 
-Distribution des températures max après-midi sur la zone :
+Distribution des températures MATIN (référence 7h-9h par ville) :
+${morningTempDist}
+
+Distribution des températures APRÈS-MIDI sur la zone :
 ${tempDist}
 
-→ Choisis ${zone === 'reseau' ? '3 paliers adjacents (T, T+1°, T+2°)' : '2 paliers adjacents (T et T+1°)'} en t'appuyant sur cette distribution. Si la température est concentrée sur une seule valeur, extrapole à ±1° pour créer le second palier. Attribue ${zone === 'reseau' ? '2 villes par palier (6 au total, 1 par sous-zone)' : '2 villes par palier (4 au total, géographiquement réparties)'}.
+${tempDirective}
 
 Détail par ville (triées du plus frais au plus chaud en après-midi${zone === 'reseau' ? ', regroupées par sous-zone' : ''}) :
 ${perCityStr}${reseauReminder}
 
-Rédige maintenant le bulletin pour la journée du ${dateLabel} sur la zone "${zoneLabel}". Énonce les paliers de température du plus bas au plus haut. Texte brut uniquement, prêt à être lu à l'antenne.`;
+Rédige maintenant le bulletin pour le slot « ${slot} » sur la zone "${zoneLabel}" (journée du ${dateLabel}). Énonce les paliers de température du plus bas au plus haut. Texte brut uniquement, prêt à être lu à l'antenne.`;
 }
 
 /* =========================================================
@@ -831,9 +1254,9 @@ Rédige maintenant le bulletin pour la journée du ${dateLabel} sur la zone "${z
  * Génère un bulletin pour une seule zone.
  * Retourne { zoneKey, zoneLabel, text, perCity } ou jette une erreur.
  */
-async function generateOne(zoneKey, dateStr) {
+async function generateOne(zoneKey, dateStr, slot) {
   const perCity = await fetchWeather(zoneKey, dateStr);
-  const prompt = buildPrompt(zoneKey, perCity, dateStr);
+  const prompt = buildPrompt(zoneKey, perCity, dateStr, slot);
   const res = await fetch(PROXY_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -859,6 +1282,21 @@ async function generateOne(zoneKey, dateStr) {
 /* Ordre d'affichage quand mode "Toutes les zones" */
 const ALL_ZONES_ORDER = ['reseau', 'mel', 'nord', 'pdc', 'picardie', 'marne'];
 
+/* Libellés slot pour l'en-tête des bulletins affichés */
+const SLOT_LABELS = {
+  'today-journee': 'Journée du',
+  'today-matin': 'Ce matin,',
+  'today-aprem': 'Cet après-midi du',
+  'tomorrow-matin': 'Demain matin,',
+  'custom-matin': 'Matin du',
+  'custom-aprem': 'Après-midi du',
+  'custom-journee': 'Journée du'
+};
+function slotHeaderLabel(slot, dateStr) {
+  const prefix = SLOT_LABELS[slot] || 'Journée du';
+  return `${prefix} ${formatDateFR(dateStr)}`;
+}
+
 async function generateBulletin() {
   if (!state.zone || !state.date) return;
 
@@ -883,7 +1321,7 @@ async function generateBulletin() {
   list.innerHTML = zoneKeys.map(zk => `
     <div class="bulletin-card loading-card" data-zone="${zk}">
       <div class="bulletin-header">
-        <span class="bulletin-title">${escapeHtml(ZONES[zk].label)} — Journée du ${formatDateFR(state.date)}</span>
+        <span class="bulletin-title">${escapeHtml(ZONES[zk].label)} — ${slotHeaderLabel(state.slot, state.date)}</span>
       </div>
       <div class="bulletin-text loading">Bulletin en cours de rédaction…</div>
     </div>
@@ -895,7 +1333,7 @@ async function generateBulletin() {
       if (isAll && i > 0) {
         await new Promise(r => setTimeout(r, i * 150));
       }
-      return generateOne(zk, state.date);
+      return generateOne(zk, state.date, state.slot);
     }));
 
     const rendered = results.map((r, i) => ({
@@ -949,7 +1387,7 @@ function renderBulletins(rendered) {
       return `
         <div class="bulletin-card" data-zone="${r.zoneKey}" data-idx="${i}">
           <div class="bulletin-header">
-            <span class="bulletin-title">${escapeHtml(r.zoneLabel)} — Journée du ${formatDateFR(state.date)}</span>
+            <span class="bulletin-title">${escapeHtml(r.zoneLabel)} — ${slotHeaderLabel(state.slot, state.date)}</span>
             <button class="btn-copy" onclick="copyBulletinAt(${i})">Copier</button>
           </div>
           <div class="bulletin-text">${escapeHtml(r.value.text)}</div>
@@ -959,7 +1397,7 @@ function renderBulletins(rendered) {
       return `
         <div class="bulletin-card" data-zone="${r.zoneKey}" data-idx="${i}">
           <div class="bulletin-header">
-            <span class="bulletin-title">${escapeHtml(r.zoneLabel)} — Journée du ${formatDateFR(state.date)}</span>
+            <span class="bulletin-title">${escapeHtml(r.zoneLabel)} — ${slotHeaderLabel(state.slot, state.date)}</span>
           </div>
           <div class="bulletin-text"><span style="color:#e94560;">Erreur : ${escapeHtml(r.error)}</span></div>
         </div>
