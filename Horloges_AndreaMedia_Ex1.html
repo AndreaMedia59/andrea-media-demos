@@ -286,6 +286,58 @@
     .tf-value.ok,.tf-diff.ok   { color:#3ec93e; }
     .tf-value.warn,.tf-diff.warn { color:#f0a030; }
     .tf-value.err,.tf-diff.err  { color:#e94560; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      body { grid-template-columns: 180px 1fr; }
+    }
+    @media (max-width: 700px) {
+      body {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+      .sidebar {
+        position: static;
+        height: auto;
+        flex-direction: row;
+        flex-wrap: wrap;
+        padding: 10px 12px;
+        border-right: none;
+        border-bottom: 1px solid #1e3d60;
+        overflow-x: auto;
+        overflow-y: visible;
+        gap: 6px;
+      }
+      .sidebar-brand {
+        width: 100%;
+        padding: 6px 0 8px;
+        margin-bottom: 6px;
+      }
+      .sidebar-label { display: none; }
+      .zone-nav { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+      .station-btn {
+        padding: 6px 12px;
+        font-size: 0.78rem;
+      }
+      .station-btn.active::before { display: none; }
+      .page-header { padding: 14px 16px 10px 16px; }
+      .page-header::before { left: 6px; top: 18px; height: 30px; }
+      .page-title { font-size: 1.15rem; }
+      .hour-nav { gap: 4px; }
+      .hour-btn { padding: 5px 9px; font-size: 0.78rem; }
+      .chart-wrap {
+        width: calc(100vw - 20px);
+        height: min(480px, calc(100vw - 20px));
+      }
+      .toolbar {
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 10px 12px;
+      }
+      .toolbar > div { flex-wrap: wrap; gap: 6px; }
+      .table-section { overflow-x: auto; }
+      table { min-width: 560px; }
+    }
   </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
 </head>
